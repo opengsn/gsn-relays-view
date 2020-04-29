@@ -4,7 +4,7 @@ import {Table,Card} from 'react-bootstrap';
 import {Form, ButtonGroup} from 'react-bootstrap';
 import Web3 from 'web3'
 import RelayHubAbi from "@opengsn/gsn/src/common/interfaces/IRelayHub.js"
-import rp from 'request-promise'
+import axios from 'axios'
 import cookie from 'react-cookies'
 
 // import './App.css';
@@ -65,7 +65,7 @@ let otherNetworks= {
 //let hubaddr = '0xD216153c06E857cD7f72665E0aF1d7D82172F494'
 
 let BLOCK_HISTORY_COUNT = 6000*30
-const GETADDR_TIMEOUT = 10*1000
+const GETADDR_TIMEOUT = 5*1000
 
 function same(a,b) { return a.toUpperCase() === b.toUpperCase() }
 
@@ -77,7 +77,7 @@ class RelayInfo extends React.Component {
 
 	return <Card><Card.Body>
 		<Card.Title> <RelayUrl url={relay.url}/></Card.Title>
-		<Card.Subtitle>Status: {relay.status}
+		<Card.Subtitle>Status: <Status status={relay.status} />
     <Address addr={relay.addr} network={network} />
     </Card.Subtitle>
 		txfee: {relay.txfee}%, Bal:<Balance val={relay.bal} /> owner: {relay.owner}
@@ -128,24 +128,38 @@ class GsnStatus extends React.Component {
 
     let relays = this.state.relaysDict
     let counter=0
-    res.forEach(e=> {
+
+    const visited={}
+    res.reverse().forEach(e=> {
 
         let r = e.returnValues
 
-        console.log('r=',r)
         counter++
         if ( counter===123  ) {
           // counter=1;
           r.url = "https://relay1.duckdns.org:1234"
         }
-        rp({url: r.url + '/getaddr', timeout:GETADDR_TIMEOUT, json:true})
+//r.url = 'https://34.89.42.190'
+	let timeoutId
+	let setStatus = (status) => {
+	  relays[r.relayManager].status = status
+	  this.updateDisplay()
+	  clearTimeout(timeoutId)
+	}
+
+        if ( visited[r.relayManager] ) return;
+	visited[r.relayManager]=1
+	timeoutId = setTimeout(()=>{
+	  setStatus({ level: 'orange', value: 'Timed-out' })
+	}, GETADDR_TIMEOUT)
+        axios.get(r.url + '/getaddr', {timeout:GETADDR_TIMEOUT, json:true})
           .then(ret => {
-            let version = ret.Version || ""
-            relays[r.relayManager].status = !same(r.relayManager,ret.RelayManagerAddress) ? "addr-mismatch @"+e.blockNumber //            ret.RelayServerAddress
-              : ret.Ready ? "Ready "+version : "pending "+version
-            this.updateDisplay()
+            let version = ret.data.Version || ""
+            setStatus( !same(r.relayManager,ret.data.RelayManagerAddress) ? { level: "magenta", value:"addr-mismatch @"+e.blockNumber }
+              : ret.data.Ready ? { level:"green", value:"Ready "+version } : { level:"orange", value: "pending "+version } )
+//            this.updateDisplay()
           })
-          .catch( err=> relays[r.relayManager].status = err.error && err.error.code ? err.error.code : err.message || err.toString() )
+          .catch( err=> setStatus( {level:"red",value: err.error && err.error.code ? err.error.code : err.message || err.toString() } ))
 
         web3.eth.getBalance(r.relayManager)
           .then(bal => { relays[r.relayManager].bal = bal / 1e18; this.updateDisplay() } )
@@ -153,10 +167,11 @@ class GsnStatus extends React.Component {
         let aowner = owner(r);
         // console.log( e.blockNumber, e.event, r.url, aowner )
         const txfee = r.baseRelayFee + "+" +r.pctRelayFee+"%"
-        relays[r.relayManager] = {addr:r.relayManager, url: r.url, owner: aowner, txfee, status: ""}
+        relays[r.relayManager] = {addr:r.relayManager, url: r.url, owner: aowner, txfee, status: {level:"gray", value:"waiting"}}
     })
     this.updateDisplay()
 
+	// owner status not working.
       if(false) {
           Object.keys(owners).forEach(k => {
               web3.eth.getBalance(k)
@@ -190,17 +205,19 @@ class GsnStatus extends React.Component {
     let web3 = new Web3(web3provider)
     this.web3 = web3
 
-    this.relayHeaders = this.headers(['addr', 'url', 'txfee', 'status', 'bal', 'owner'])
+    this.relayHeaders = this.headers(['addr', 'url', 'txfee', 'status', 'bal' /*, 'owner'*/])
     this.ownerHeaders = this.headers(['addr','name','deposit', 'bal'])
     this.updateRelays()
 }
+
 
   //table columns with special renderers
   renderers = {
     addr : (val) => <Address addr={val} network={this.state.network} />,
     bal : (val) => <Balance val={val} />,
     deposit : (val) => <Balance val={val} />,
-    url : (val) =><RelayUrl url={val} />
+    url : (val) =><RelayUrl url={val} />,
+    status: (val) => <Status status={val} />
 
   }
   headers(arr) {
@@ -225,6 +242,8 @@ class GsnStatus extends React.Component {
   );
 }
 }
+
+const Status = ({status})=> <font color={status.level}>{status.value}</font>
 
 function MyHeaderCol({header}) {
   return header.title || header.id

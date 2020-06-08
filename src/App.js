@@ -4,21 +4,28 @@ import {Table,Card} from 'react-bootstrap';
 import {Form, ButtonGroup} from 'react-bootstrap';
 import Web3 from 'web3'
 import RelayHubAbi from "@opengsn/gsn/src/common/interfaces/IRelayHub.js"
+import {RelayProvider} from "@opengsn/gsn/dist/src/relayclient/RelayProvider";
 import axios from 'axios'
 import cookie from 'react-cookies'
 
+let p = new RelayProvider(global.web3.currentProvider)
+
+global.web3 = new Web3(p)
+let addr='0x'+'0'.repeat(40)
+console.log( 'asdasd' )
+global.web3.eth.getBalance(addr).then(b=>console.log( 'bal=', b/1e18))
 // import './App.css';
 
 let networks={
     kovan:  {
         name: "Kovan",
     	"RelayHub": "0x2E0d94754b348D208D64d52d78BcD443aFA9fa52",
-        url: "https://kovan.infura.io/v3/c3422181d0594697a38defe7706a1e5b",
+        url: "https://kovan.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
         etherscan: "https://kovan.etherscan.io/search?q="
     },
     ropsten:  {
         name: "Ropsten",
-        url: "https://ropsten.infura.io/v3/c3422181d0594697a38defe7706a1e5b",
+        url: "https://ropsten.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
         etherscan: "https://ropsten.etherscan.io/search?q=",
         RelayHub: "0xEF46DD512bCD36619a6531Ca84B188b47D85124b"
     }
@@ -29,7 +36,7 @@ let otherNetworks= {
     rinkeby:  {
         name: "Rinkeby",
         RelayHub: "0xEF46DD512bCD36619a6531Ca84B188b47D85124b",
-        url: "https://rinkeby.infura.io/v3/c3422181d0594697a38defe7706a1e5b",
+        url: "https://rinkeby.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
         etherscan: "https://rinkeby.etherscan.io/search?q="
     },
     mainnet:  {
@@ -201,7 +208,7 @@ class GsnStatus extends React.Component {
     }
     let network = networks[this.props.network]
     this.state.network = network
-    let web3provider = new Web3.providers.HttpProvider(network.url)
+    let web3provider = new RelayProvider( new Web3.providers.HttpProvider(network.url), {verbose:true} )
     let web3 = new Web3(web3provider)
     this.web3 = web3
 

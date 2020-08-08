@@ -4,27 +4,57 @@ import {Table,Card} from 'react-bootstrap';
 import {Form, ButtonGroup} from 'react-bootstrap';
 import Web3 from 'web3'
 import RelayHubAbi from "@opengsn/gsn/src/common/interfaces/IRelayHub.js"
-import {RelayProvider} from "@opengsn/gsn/dist/src/relayclient/RelayProvider";
+import StakeManagerAbi from "@opengsn/gsn/src/common/interfaces/IStakeManager.js"
+//import {RelayProvider} from "@opengsn/gsn/dist/src/relayclient/RelayProvider";
 import axios from 'axios'
 import cookie from 'react-cookies'
+import EventEmitter from 'events'
 
-let p = new RelayProvider(global.web3.currentProvider)
+// let p = new RelayProvider(global.web3.currentProvider)
 
-global.web3 = new Web3(p)
-let addr='0x'+'0'.repeat(40)
-console.log( 'asdasd' )
-global.web3.eth.getBalance(addr).then(b=>console.log( 'bal=', b/1e18))
+
+// global.web3 = new Web3(p)
+// let addr='0x'+'0'.repeat(40)
+
+// global.web3.eth.getBalance(addr).then(b=>console.log( 'bal=', b/1e18))
 // import './App.css';
-
+let removedRelays = {}
+let globalevent = new EventEmitter()
 let networks={
-    kovan:  {
-        name: "Kovan",
+
+    kovanv2:  {
+        name: "Kovan-V2",
+        url: "https://kovan.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
+        etherscan: "https://kovan.etherscan.io/search?q=",
+        RelayHub: "0xA17C8F25668a5748E9B80ED8Ff842f8909258bF6",
+    },
+
+    ropstenv2:  {
+        name: "Ropsten-V2",
+        url: "https://ropsten.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
+        etherscan: "https://ropsten.etherscan.io/search?q=",
+        RelayHub: "0xb3e93d8b141732cfd5e5d7bf0018f6cbca193e9a",
+    },
+    mainnet:  {
+        name: "Mainnet-v2",
+      "RelayHub": "0x5648B6306380689AF8d2DE7Bdd23D916b9eE0db5",
+        url: "https://mainnet.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
+        etherscan: "https://etherscan.io/search?q="
+    },
+    xdaiv2: {
+        name: "xDAI-V2",
+        url:"https://dai.poa.network",
+        etherscan:"https://blockscout.com/poa/xdai/address/",
+        RelayHub: "0xA58B6fC9264ce507d0B0B477ceE31674341CB27e",      
+    },
+    kovanv09:  {
+        name: "Kovan 0.9",
     	"RelayHub": "0x2E0d94754b348D208D64d52d78BcD443aFA9fa52",
         url: "https://kovan.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
         etherscan: "https://kovan.etherscan.io/search?q="
     },
-    ropsten:  {
-        name: "Ropsten",
+    ropstenv09:  {
+        name: "Ropsten 0.9",
         url: "https://ropsten.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
         etherscan: "https://ropsten.etherscan.io/search?q=",
         RelayHub: "0xEF46DD512bCD36619a6531Ca84B188b47D85124b"
@@ -71,7 +101,7 @@ let otherNetworks= {
 //new Web3.providers.HttpProvider(network))
 //let hubaddr = '0xD216153c06E857cD7f72665E0aF1d7D82172F494'
 
-let BLOCK_HISTORY_COUNT = 6000*30
+let BLOCK_HISTORY_COUNT = 6000*30*30
 const GETADDR_TIMEOUT = 5*1000
 
 function same(a,b) { return a.toUpperCase() === b.toUpperCase() }
@@ -102,7 +132,7 @@ let RelayUrl = ({url}) => <a href={url+"/getaddr"} target="relayurl">{url.replac
 let Balance = ({val}) => <span> { val || val == 0 ? val.toFixed(6) : "n/a" } </span>
 
 let Address = ({addr,network} ) => <a href={network.etherscan+addr} target="etherscan" >
-      <pre>{addr.replace(/^0x/, "").slice(0,8)+"\u2026"} </pre></a>
+      <font family="monospaces">{addr?addr.replace(/^0x/, "").slice(0,8)+"\u2026":'null'} </font></a>
 
 class GsnStatus extends React.Component {
 
@@ -113,17 +143,31 @@ class GsnStatus extends React.Component {
     let curBlockNumber = await web3.eth.getBlockNumber()
     let fromBlock=Math.max(1, curBlockNumber-BLOCK_HISTORY_COUNT )
     let hub = new web3.eth.Contract(RelayHubAbi, this.state.network.RelayHub)
+
+    // hub.methods.getVersion().call().then(ver=>{this.state.hubversion = ver}).catch()
+    this.state.relaysDict={}
+    this.state.ownersDict={}
+
+    hub.methods.getStakeManager().call().then(async sma=>{
+      let sm = new web3.eth.Contract(StakeManagerAbi, sma)
+      let smEvents = await sm.getPastEvents(null,{fromBlock:1})
+      smEvents.forEach(e=>{
+        if ( e.event === 'HubUnauthorized' || e.event === 'StakeUnlocked') {
+          let relayManager = e.returnValues.relayManager
+          removedRelays[relayManager] = 1
+          delete relays[relayManager]
+        }
+      })
+    })
     let pastEventsAsync = hub.getPastEvents('RelayServerRegistered', {fromBlock});
 
     let res = await pastEventsAsync
 
-    this.state.relaysDict={}
-    this.state.ownersDict={}
     let owners=this.state.ownersDict
     function owner(relay) {
             let h = relay.owner
             if ( !owners[h] ) {
-                let name = relay.url.match(/\b(\w+)\.\w+$/)[1]
+                let name = (relay.url+"/").match(/\b(\w+)\.\w+\//)[1]
                 owners[h] = {
                   addr : h,
                   name: name || "owner-"+(Object.keys(owners).length+1)
@@ -148,8 +192,13 @@ class GsnStatus extends React.Component {
         }
 //r.url = 'https://34.89.42.190'
 	let timeoutId
-	let setStatus = (status) => {
+	let setStatus = (status,worker) => {
+    //skip removed (unstaked) relays
+    if ( !relays[r.relayManager] )
+      return
+
 	  relays[r.relayManager].status = status
+    relays[r.relayManager].worker = worker
 	  this.updateDisplay()
 	  clearTimeout(timeoutId)
 	}
@@ -162,19 +211,26 @@ class GsnStatus extends React.Component {
         axios.get(r.url + '/getaddr', {timeout:GETADDR_TIMEOUT, json:true})
           .then(ret => {
             let version = ret.data.Version || ""
-            setStatus( !same(r.relayManager,ret.data.RelayManagerAddress) ? { level: "magenta", value:"addr-mismatch @"+e.blockNumber }
-              : ret.data.Ready ? { level:"green", value:"Ready "+version } : { level:"orange", value: "pending "+version } )
+            const status = !same(r.relayManager,ret.data.RelayManagerAddress) ? { level: "magenta", value:"addr-mismatch" }
+              : ret.data.Ready ? { level:"green", value:"Ready "+version } : { level:"orange", value: "pending "+version };
+            setStatus(status, ret.data.RelayServerAddress )
 //            this.updateDisplay()
           })
-          .catch( err=> setStatus( {level:"red",value: err.error && err.error.code ? err.error.code : err.message || err.toString() } ))
+          .catch( err=> { 
+            if ( /timeout/.test(err.toString())) {
+              setStatus( {level:"orange",value: 'Timeout'})
+            } else { 
+              setStatus( {level:"red",value: err.error && err.error.code ? err.error.code : err.message || err.toString() } )
+            }
+          })
 
         web3.eth.getBalance(r.relayManager)
-          .then(bal => { relays[r.relayManager].bal = bal / 1e18; this.updateDisplay() } )
+          .then(bal => { if (relays[r.relayManager]) { relays[r.relayManager].bal = bal / 1e18; this.updateDisplay() } } )
 
         let aowner = owner(r);
         // console.log( e.blockNumber, e.event, r.url, aowner )
-        const txfee = r.baseRelayFee + "+" +r.pctRelayFee+"%"
-        relays[r.relayManager] = {addr:r.relayManager, url: r.url, owner: aowner, txfee, status: {level:"gray", value:"waiting"}}
+        const txfee = `${r.baseRelayFee}+${r.pctRelayFee}%`  // + `\n${(curBlockNumber-e.blockNumber)}`
+        relays[r.relayManager] = {addr:r.relayManager, worker:'', url: r.url, owner: aowner, txfee, status: {level:"gray", value:"waiting"}}
     })
     this.updateDisplay()
 
@@ -198,7 +254,11 @@ class GsnStatus extends React.Component {
 
   //call to reflect current state (relays, owners) in the UI
   updateDisplay() {
-      this.setState({relays:Object.values(this.state.relaysDict), owners: Object.values(this.state.ownersDict)})
+      const levels = { green:1, gray:2, orange: 2, red:3, magenta:4 }
+      function byLevel(a,b) {
+        return levels[a.status.level] - levels[b.status.level]
+      }
+      this.setState({relays:Object.values(this.state.relaysDict).sort(byLevel), owners: Object.values(this.state.ownersDict)})
   }
   constructor(props) {
     super(props)
@@ -208,12 +268,17 @@ class GsnStatus extends React.Component {
     }
     let network = networks[this.props.network]
     this.state.network = network
-    let web3provider = new RelayProvider( new Web3.providers.HttpProvider(network.url), {verbose:true} )
+    let httpProvider = new Web3.providers.HttpProvider(network.url)
+    // let web3provider = new RelayProvider( httpProvider, {verbose:true} )
+    let web3provider = httpProvider
     let web3 = new Web3(web3provider)
     this.web3 = web3
 
-    this.relayHeaders = this.headers(['addr', 'url', 'txfee', 'status', 'bal' /*, 'owner'*/])
+    this.relayHeaders = this.headers(['addr', 'worker', 'url', 'txfee', 'status', 'bal' /*, 'owner'*/])
     this.ownerHeaders = this.headers(['addr','name','deposit', 'bal'])
+    globalevent.on('refresh', e=> {
+      this.updateRelays()
+    })
     this.updateRelays()
 }
 
@@ -221,6 +286,7 @@ class GsnStatus extends React.Component {
   //table columns with special renderers
   renderers = {
     addr : (val) => <Address addr={val} network={this.state.network} />,
+    worker : (val) => <Address addr={val} network={this.state.network} />,
     bal : (val) => <Balance val={val} />,
     deposit : (val) => <Balance val={val} />,
     url : (val) =><RelayUrl url={val} />,
@@ -235,6 +301,7 @@ class GsnStatus extends React.Component {
     <Card> <Card.Body>
 
      <h3>Network: {this.state.network.name}</h3>
+      RelayHub: {this.state.hubversion} <Address addr={this.state.network.RelayHub} network={this.state.network} /> <br/>
       Relays:
       {/* {this.state.relays.map(relay=><RelayInfo relay={relay} network={this.state.network} />)} */}
       <MyTable striped  data={this.state.relays} columns={this.relayHeaders} />
@@ -302,6 +369,7 @@ class App extends React.Component {
 
     return <>
      <Card.Body>
+      <button onClick={()=>globalevent.emit('refresh')}>Refresh</button>
 
       {false &&<>
         <ButtonGroup>
@@ -311,6 +379,7 @@ class App extends React.Component {
         </ButtonGroup>
       </>}
       { Object.keys(networks).filter( net=>this.state.showAll ? true : net==="mainnet" ).map( net=> <GsnStatus key={net} network={net} showOwners={this.state.showOwners} /> ) }
+      <button onClick={()=>globalevent.emit('refresh')}>Refresh</button>
 
     </Card.Body></>
   }

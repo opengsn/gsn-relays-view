@@ -13,6 +13,9 @@ import EventEmitter from 'events'
 // let p = new RelayProvider(global.web3.currentProvider)
 
 
+//use #infura=xxxx, or default one.
+const infura = (document.location.href.match(/#.*infura=([^&]*)/) ||[])[1] || '127b8c9f6d0d46f69a42963b5cd0d0ac'
+
 // global.web3 = new Web3(p)
 // let addr='0x'+'0'.repeat(40)
 
@@ -23,26 +26,26 @@ let globalevent = new EventEmitter()
 let networks={
 
     kovanv2:  {
-        name: "Kovan-V2",
-        url: "https://kovan.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
+        name: "Kovan-V2 beta",
+        url: "https://kovan.infura.io/v3/" + infura,
         etherscan: "https://kovan.etherscan.io/search?q=",
-        RelayHub: "0xA17C8F25668a5748E9B80ED8Ff842f8909258bF6",
+        RelayHub: "0xcfcb6017e8ac4a063504b9d31b4AbD618565a276",
     },
 
     ropstenv2:  {
-        name: "Ropsten-V2",
-        url: "https://ropsten.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
+        name: "Ropsten-V2 beta",
+        url: "https://ropsten.infura.io/v3/" + infura,
         etherscan: "https://ropsten.etherscan.io/search?q=",
-        RelayHub: "0xb3e93d8b141732cfd5e5d7bf0018f6cbca193e9a",
+        RelayHub: "0xF0851c3333a9Ba0D61472de4C0548F1160F95f17",
     },
     mainnet:  {
-        name: "Mainnet-v2",
+        name: "Mainnet-v2 alpha",
       "RelayHub": "0x5648B6306380689AF8d2DE7Bdd23D916b9eE0db5",
-        url: "https://mainnet.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
+        url: "https://mainnet.infura.io/v3/" + infura,
         etherscan: "https://etherscan.io/search?q="
     },
     xdaiv2: {
-        name: "xDAI-V2",
+        name: "xDAI-V2 alpha",
         url:"https://dai.poa.network",
         etherscan:"https://blockscout.com/poa/xdai/address/",
         RelayHub: "0xA58B6fC9264ce507d0B0B477ceE31674341CB27e",      
@@ -50,12 +53,12 @@ let networks={
     kovanv09:  {
         name: "Kovan 0.9",
     	"RelayHub": "0x2E0d94754b348D208D64d52d78BcD443aFA9fa52",
-        url: "https://kovan.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
+        url: "https://kovan.infura.io/v3/" + infura,
         etherscan: "https://kovan.etherscan.io/search?q="
     },
     ropstenv09:  {
         name: "Ropsten 0.9",
-        url: "https://ropsten.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
+        url: "https://ropsten.infura.io/v3/" + infura,
         etherscan: "https://ropsten.etherscan.io/search?q=",
         RelayHub: "0xEF46DD512bCD36619a6531Ca84B188b47D85124b"
     }
@@ -66,7 +69,7 @@ let otherNetworks= {
     rinkeby:  {
         name: "Rinkeby",
         RelayHub: "0xEF46DD512bCD36619a6531Ca84B188b47D85124b",
-        url: "https://rinkeby.infura.io/v3/f40be2b1a3914db682491dc62a19ad43",
+        url: "https://rinkeby.infura.io/v3/" + infura,
         etherscan: "https://rinkeby.etherscan.io/search?q="
     },
     mainnet:  {

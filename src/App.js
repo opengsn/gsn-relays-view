@@ -3,8 +3,8 @@ import React from 'react';
 import {Table,Card} from 'react-bootstrap';
 import {Form, ButtonGroup} from 'react-bootstrap';
 import Web3 from 'web3'
-import RelayHubAbi from "@opengsn/gsn/src/common/interfaces/IRelayHub.js"
-import StakeManagerAbi from "@opengsn/gsn/src/common/interfaces/IStakeManager.js"
+import RelayHubAbi from "@opengsn/gsn/dist/src/common/interfaces/IRelayHub.json"
+import StakeManagerAbi from "@opengsn/gsn/dist/src/common/interfaces/IStakeManager.json"
 //import {RelayProvider} from "@opengsn/gsn/dist/src/relayclient/RelayProvider";
 import axios from 'axios'
 import cookie from 'react-cookies'
@@ -25,15 +25,36 @@ let removedRelays = {}
 let globalevent = new EventEmitter()
 let networks={
 
+    kovanBeta3:  {
+        name: "Kovan-V2 beta.3",
+        url: "https://kovan.infura.io/v3/" + infura,
+        etherscan: "https://kovan.etherscan.io/search?q=",
+        RelayHub: "0xc76DaB4e73b5a2af24375D7C2A668C0B6bCdE0Df",
+    },
+
+    rinkebyBeta3:  {
+        name: "Rinkeby-V2 beta.3",
+        url: "https://rinkeby.infura.io/v3/" + infura,
+        etherscan: "https://rinkeby.etherscan.io/search?q=",
+        RelayHub: "0xD6b9b2eA2b2799ACcfb38c0FcE423f80407D3E72",
+    },
+
+    ropstenBeta3:  {
+        name: "Ropsten-V2 beta.3",
+        url: "https://ropsten.infura.io/v3/" + infura,
+        etherscan: "https://ropsten.etherscan.io/search?q=",
+        RelayHub: "0xbfA4b7A75F8e38a453508A86B3b7833F3627C40c",
+    },
+
     kovanv2:  {
-        name: "Kovan-V2 beta",
+        name: "Kovan-V2 beta.1",
         url: "https://kovan.infura.io/v3/" + infura,
         etherscan: "https://kovan.etherscan.io/search?q=",
         RelayHub: "0xcfcb6017e8ac4a063504b9d31b4AbD618565a276",
     },
 
     ropstenv2:  {
-        name: "Ropsten-V2 beta",
+        name: "Ropsten-V2 beta.1",
         url: "https://ropsten.infura.io/v3/" + infura,
         etherscan: "https://ropsten.etherscan.io/search?q=",
         RelayHub: "0xF0851c3333a9Ba0D61472de4C0548F1160F95f17",
@@ -147,11 +168,11 @@ class GsnStatus extends React.Component {
     let fromBlock=Math.max(1, curBlockNumber-BLOCK_HISTORY_COUNT )
     let hub = new web3.eth.Contract(RelayHubAbi, this.state.network.RelayHub)
 
-    // hub.methods.getVersion().call().then(ver=>{this.state.hubversion = ver}).catch()
+    hub.methods.versionHub().call().then(ver=>{this.state.hubversion = ver}).catch(err=>this.state.hubversion=err.message)
     this.state.relaysDict={}
     this.state.ownersDict={}
 
-    hub.methods.getStakeManager().call().then(async sma=>{
+    hub.methods.stakeManager().call().then(async sma=>{
       let sm = new web3.eth.Contract(StakeManagerAbi, sma)
       let smEvents = await sm.getPastEvents(null,{fromBlock:1})
       smEvents.forEach(e=>{
@@ -170,7 +191,8 @@ class GsnStatus extends React.Component {
     function owner(relay) {
             let h = relay.owner
             if ( !owners[h] ) {
-                let name = (relay.url+"/").match(/\b(\w+)\.\w+\//)[1]
+                const url = relay.url || relay.relayUrl
+                let name = (url+"/").match(/\b(\w+)\.\w+\//)[1]
                 owners[h] = {
                   addr : h,
                   name: name || "owner-"+(Object.keys(owners).length+1)
@@ -206,17 +228,21 @@ class GsnStatus extends React.Component {
 	  clearTimeout(timeoutId)
 	}
 
-        if ( visited[r.relayManager] ) return;
+  if ( visited[r.relayManager] ) return;
 	visited[r.relayManager]=1
 	timeoutId = setTimeout(()=>{
 	  setStatus({ level: 'orange', value: 'Timed-out' })
 	}, GETADDR_TIMEOUT)
-        axios.get(r.url + '/getaddr', {timeout:GETADDR_TIMEOUT, json:true})
+        axios.get(r.relayUrl + '/getaddr', {timeout:GETADDR_TIMEOUT, json:true})
           .then(ret => {
-            let version = ret.data.Version || ""
-            const status = !same(r.relayManager,ret.data.RelayManagerAddress) ? { level: "magenta", value:"addr-mismatch" }
-              : ret.data.Ready ? { level:"green", value:"Ready "+version } : { level:"orange", value: "pending "+version };
-            setStatus(status, ret.data.RelayServerAddress )
+            //support both beta.3 and older (beta.2, v0.9) response
+            const ready = ret.data.Ready || ret.data.ready
+            let version = ret.data.Version || ret.data.version || ""
+            const worker = ret.data.RelayServerAddress || ret.data.relayWorkerAddress
+            const manager = ret.data.RelayManagerAddress || ret.data.relayManagerAddress
+            const status = !same(r.relayManager,manager) ? { level: "magenta", value:"addr-mismatch" }
+              : ready ? { level:"green", value:"Ready "+version } : { level:"orange", value: "pending "+version };
+            setStatus(status, worker )
 //            this.updateDisplay()
           })
           .catch( err=> { 
@@ -233,7 +259,7 @@ class GsnStatus extends React.Component {
         let aowner = owner(r);
         // console.log( e.blockNumber, e.event, r.url, aowner )
         const txfee = `${r.baseRelayFee}+${r.pctRelayFee}%`  // + `\n${(curBlockNumber-e.blockNumber)}`
-        relays[r.relayManager] = {addr:r.relayManager, worker:'', url: r.url, owner: aowner, txfee, status: {level:"gray", value:"waiting"}}
+        relays[r.relayManager] = {addr:r.relayManager, worker:'', url: r.relayUrl, owner: aowner, txfee, status: {level:"gray", value:"waiting"}}
     })
     this.updateDisplay()
 
@@ -304,7 +330,9 @@ class GsnStatus extends React.Component {
     <Card> <Card.Body>
 
      <h3>Network: {this.state.network.name}</h3>
-      RelayHub: {this.state.hubversion} <Address addr={this.state.network.RelayHub} network={this.state.network} /> <br/>
+      RelayHub: <Address addr={this.state.network.RelayHub} network={this.state.network} /> 
+      <b>{this.state.hubversion}</b>
+      <br/>
       Relays:
       {/* {this.state.relays.map(relay=><RelayInfo relay={relay} network={this.state.network} />)} */}
       <MyTable striped  data={this.state.relays} columns={this.relayHeaders} />

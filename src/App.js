@@ -24,7 +24,34 @@ const infura = (document.location.href.match(/#.*infura=([^&]*)/) ||[])[1] || '1
 let removedRelays = {}
 let globalevent = new EventEmitter()
 let networks={
+      kovanV2:  {
+        name: "Kovan",
+        url: "https://kovan.infura.io/v3/" + infura,
+        etherscan: "https://kovan.etherscan.io/search?q=",
+        RelayHub: "0xE9dcD2CccEcD77a92BA48933cb626e04214Edb92",
+    },
 
+    rinkebyV2:  {
+        name: "Rinkeby",
+        url: "https://rinkeby.infura.io/v3/" + infura,
+        etherscan: "https://rinkeby.etherscan.io/search?q=",
+        RelayHub: "0x53C88539C65E0350408a2294C4A85eB3d8ce8789",
+    },
+
+    ropstenV2:  {
+        name: "Ropsten",
+        url: "https://ropsten.infura.io/v3/" + infura,
+        etherscan: "https://ropsten.etherscan.io/search?q=",
+        RelayHub: "0x29e41C2b329fF4921d8AC654CEc909a0B575df20",
+    },
+
+    mainnetV2:  {
+        name: "Mainnet",
+      "RelayHub": "0x515e39f12590a94B102903363336AF9761ebF621",
+        url: "https://mainnet.infura.io/v3/" + infura,
+        etherscan: "https://etherscan.io/search?q="
+    },
+/*
     kovanBeta3:  {
         name: "Kovan-V2 beta.3",
         url: "https://kovan.infura.io/v3/" + infura,
@@ -45,27 +72,27 @@ let networks={
         etherscan: "https://ropsten.etherscan.io/search?q=",
         RelayHub: "0xbfA4b7A75F8e38a453508A86B3b7833F3627C40c",
     },
-
-    kovanv2:  {
+*/
+    kovanv2beta1:  {
         name: "Kovan-V2 beta.1",
         url: "https://kovan.infura.io/v3/" + infura,
         etherscan: "https://kovan.etherscan.io/search?q=",
         RelayHub: "0xcfcb6017e8ac4a063504b9d31b4AbD618565a276",
     },
 
-    ropstenv2:  {
+    ropstenv2beta1:  {
         name: "Ropsten-V2 beta.1",
         url: "https://ropsten.infura.io/v3/" + infura,
         etherscan: "https://ropsten.etherscan.io/search?q=",
         RelayHub: "0xF0851c3333a9Ba0D61472de4C0548F1160F95f17",
     },
-    mainnet:  {
+    mainnetAlpha:  {
         name: "Mainnet-v2 alpha",
       "RelayHub": "0x5648B6306380689AF8d2DE7Bdd23D916b9eE0db5",
         url: "https://mainnet.infura.io/v3/" + infura,
         etherscan: "https://etherscan.io/search?q="
     },
-    xdaiv2: {
+    xdaiv2alpha: {
         name: "xDAI-V2 alpha",
         url:"https://dai.poa.network",
         etherscan:"https://blockscout.com/poa/xdai/address/",

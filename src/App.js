@@ -45,6 +45,13 @@ let networks={
         RelayHub: "0x29e41C2b329fF4921d8AC654CEc909a0B575df20",
     },
 
+    goerliV2:  {
+        name: "Görli (Goerli)",
+        url: "https://goerli.infura.io/v3/" + infura,
+        etherscan: "https://goerli.etherscan.io/search?q=",
+        RelayHub: "0x1F3d1C33977957EA41bEdFDcBf7fF64Fd3A3985e",
+    },
+
     mainnetV2:  {
         name: "Mainnet",
       "RelayHub": "0x515e39f12590a94B102903363336AF9761ebF621",
@@ -98,6 +105,7 @@ let networks={
         etherscan:"https://blockscout.com/poa/xdai/address/",
         RelayHub: "0xA58B6fC9264ce507d0B0B477ceE31674341CB27e",      
     },
+/*    
     kovanv09:  {
         name: "Kovan 0.9",
     	"RelayHub": "0x2E0d94754b348D208D64d52d78BcD443aFA9fa52",
@@ -110,6 +118,7 @@ let networks={
         etherscan: "https://ropsten.etherscan.io/search?q=",
         RelayHub: "0xEF46DD512bCD36619a6531Ca84B188b47D85124b"
     }
+*/    
 }
 
 // eslint-disable-next-line
@@ -199,6 +208,8 @@ class GsnStatus extends React.Component {
     this.state.relaysDict={}
     this.state.ownersDict={}
 
+    let relays = this.state.relaysDict
+
     hub.methods.stakeManager().call().then(async sma=>{
       let sm = new web3.eth.Contract(StakeManagerAbi, sma)
       let smEvents = await sm.getPastEvents(null,{fromBlock:1})
@@ -229,7 +240,6 @@ class GsnStatus extends React.Component {
     }
 
 
-    let relays = this.state.relaysDict
     let counter=0
 
     const visited={}

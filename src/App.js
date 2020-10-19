@@ -54,9 +54,15 @@ let networks={
 
     mainnetV2:  {
         name: "Mainnet",
-      "RelayHub": "0x515e39f12590a94B102903363336AF9761ebF621",
+        RelayHub: "0x515e39f12590a94B102903363336AF9761ebF621",
         url: "https://mainnet.infura.io/v3/" + infura,
         etherscan: "https://etherscan.io/search?q="
+    },
+    kotti:  {
+        name: "ETC-Kotti",
+        RelayHub: "0x28708de1d5c681427C3F36170929D31184C113B4",
+        url: "https://www.ethercluster.com/kotti",
+        etherscan: "https://kotti.etccoopexplorer.com/address/"
     },
 /*
     kovanBeta3:  {
@@ -135,11 +141,6 @@ let otherNetworks= {
         etherscan: "https://etherscan.io/search?q="
     },
 
-    kotti:  {
-        name: "ETC-Kotti",
-        url: "https://www.ethercluster.com/kotti",
-        etherscan: "https://kotti.etccoopexplorer.com/address/"
-    },
 
     ETC:  {
         name: "Ethereum Classic (ETC)",

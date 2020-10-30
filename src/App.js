@@ -85,7 +85,6 @@ let networks={
         etherscan: "https://ropsten.etherscan.io/search?q=",
         RelayHub: "0xbfA4b7A75F8e38a453508A86B3b7833F3627C40c",
     },
-*/
     kovanv2beta1:  {
         name: "Kovan-V2 beta.1",
         url: "https://kovan.infura.io/v3/" + infura,
@@ -105,6 +104,7 @@ let networks={
         url: "https://mainnet.infura.io/v3/" + infura,
         etherscan: "https://etherscan.io/search?q="
     },
+*/
     xdaiv2alpha: {
         name: "xDAI-V2 alpha",
         url:"https://dai.poa.network",

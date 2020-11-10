@@ -24,7 +24,8 @@ const infura = (document.location.href.match(/#.*infura=([^&]*)/) ||[])[1] || '1
 let removedRelays = {}
 let globalevent = new EventEmitter()
 let networks={
-      kovanV2:  {
+
+    kovanV2:  {
         name: "Kovan",
         url: "https://kovan.infura.io/v3/" + infura,
         etherscan: "https://kovan.etherscan.io/search?q=",
@@ -58,12 +59,15 @@ let networks={
         url: "https://mainnet.infura.io/v3/" + infura,
         etherscan: "https://etherscan.io/search?q="
     },
+
     kotti:  {
         name: "ETC-Kotti",
         RelayHub: "0x28708de1d5c681427C3F36170929D31184C113B4",
-        url: "https://www.ethercluster.com/kotti",
-        etherscan: "https://kotti.etccoopexplorer.com/address/"
+        // url: "https://www.ethercluster.com/kotti",
+        url: "https://kotti.connect.bloq.cloud/v1/roast-blossom-sentence",
+        etherscan: "https:////blockscout.com/etc/kotti/address/"
     },
+
 /*
     kovanBeta3:  {
         name: "Kovan-V2 beta.3",
@@ -124,7 +128,8 @@ let networks={
         etherscan: "https://ropsten.etherscan.io/search?q=",
         RelayHub: "0xEF46DD512bCD36619a6531Ca84B188b47D85124b"
     }
-*/    
+*/
+
 }
 
 // eslint-disable-next-line

@@ -43,7 +43,14 @@ export const networks = {
         RelayHub: "0x28708de1d5c681427C3F36170929D31184C113B4",
         // url: "https://www.ethercluster.com/kotti",
         url: "https://kotti.connect.bloq.cloud/v1/roast-blossom-sentence",
-        etherscan: "https:////blockscout.com/etc/kotti/address/"
+        etherscan: "https://blockscout.com/etc/kotti/address/"
+    },
+
+    testbnb: {
+      name: "Binance-Testnet",
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+      etherscan: "https://testnet.bscscan.com/address/",
+      RelayHub: "0x515B28E7638aC923f0dB63298658167A4e4dB770",
     },
 
 /*

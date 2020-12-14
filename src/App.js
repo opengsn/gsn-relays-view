@@ -3,7 +3,7 @@ import React from 'react';
 import {Table,Card} from 'react-bootstrap';
 import {Form, ButtonGroup} from 'react-bootstrap';
 import Web3 from 'web3'
-import RelayHubAbi from "@opengsn/gsn/dist/src/common/interfaces/IRelayHub.json"
+import {abi as RelayHubAbi } from "@opengsn/gsn/dist/src/cli/compiled/RelayHub.json"
 import StakeManagerAbi from "@opengsn/gsn/dist/src/common/interfaces/IStakeManager.json"
 //import {RelayProvider} from "@opengsn/gsn/dist/src/relayclient/RelayProvider";
 import axios from 'axios'
@@ -52,8 +52,26 @@ class RelayInfo extends React.Component {
 //200b is zero-width space (allow wrapping.)
 let RelayUrl = ({url}) => <a href={url+"/getaddr"} target="relayurl">{url.replace( /http(s)?:\/\//, "" ).replace( /[.]/g, "\u200B.")}</a>
 
+function toList(x) {
+  if ( Array.isArray(x) ) return x
+  return [x]
+}
 // eslint-disable-next-line
-let Balance = ({val}) => <span> { val || val == 0 ? val.toFixed(6) : "n/a" } </span>
+let Balance = ({val, counter=0}) => <span> { toList(val).map(val=>{
+  return <span key={++counter}>{val || val === 0 ? val.toFixed(6) : "n/a"}<br/></span>
+}) } </span>
+
+let HubStatus = ( {ver, counts, minstake, unstakedelay } ) => <span>
+      <b>{ver}</b> MinStake (eth)={minstake} Unstake blocks={unstakedelay}
+      { counts.month !==0 && <table border="1"><tbody><tr>
+        <td>Counts in the past</td>
+        <td> hour:{counts.hour}</td>
+        <td> day:{counts.day} </td>
+        <td> week:{counts.week}</td>
+        <td> month:{counts.month}</td>
+        </tr></tbody></table>
+      }
+  </span>
 
 let Address = ({addr,network} ) => <a href={network.etherscan+addr} target="etherscan" >
       <font family="monospaces">{addr?addr.replace(/^0x/, "").slice(0,8)+"\u2026":'null'} </font></a>
@@ -68,7 +86,34 @@ class GsnStatus extends React.Component {
     let fromBlock=Math.max(1, curBlockNumber-BLOCK_HISTORY_COUNT )
     let hub = new web3.eth.Contract(RelayHubAbi, this.state.network.RelayHub)
 
-    hub.methods.versionHub().call().then(ver=>{this.state.hubversion = ver}).catch(err=>this.state.hubversion=err.message)
+    hub.methods.minimumStake().call().then(s=>{this.state.hubstate.minstake =s.toString()/1e18})
+    hub.methods.minimumUnstakeDelay().call().then(s=>{this.state.hubstate.unstakedelay =s.toString()})
+    hub.methods.versionHub().call().then(ver=>{this.state.hubstate.version = ver.replace(/\+opengsn.*/,'')}).catch(err=>this.state.hubstate.version='(no version)')
+    async function hubStats(web3, hub, stat) {
+        //calc time per block:
+        const {number, timestamp}= await web3.eth.getBlock('latest')
+        const N=100000
+        const ts = await web3.eth.getBlock(number-N).then(b=>b.timestamp)
+        const secPerBlock = (timestamp-ts) / N
+        const hourInBlocks = Math.trunc(3600 / secPerBlock)
+        let hour=0, day=0, week=0, month=0
+        const events = await hub.getPastEvents('TransactionRelayed', {fromBlock: number- hourInBlocks*24*40})
+        events.forEach(e=>{
+          const blockPast = number - e.blockNumber
+          if ( blockPast < hourInBlocks ) hour++
+          if ( blockPast < hourInBlocks* 24 ) day++
+          if ( blockPast < hourInBlocks* 24*7 ) week++
+          if ( blockPast < hourInBlocks* 24*30 ) month++
+
+        })
+        // console.log( 'hubstats:', {hour,day,week,month, totalEvents:events.length})
+
+        return {hour,day,week,month}
+    }
+    hubStats(web3, hub).then(ret=>{
+      this.state.hubstate.counts=ret
+      this.updateDisplay()
+    })
     this.state.relaysDict={}
     this.state.ownersDict={}
 
@@ -88,7 +133,10 @@ class GsnStatus extends React.Component {
     })
     let pastEventsAsync = hub.getPastEvents('RelayServerRegistered', {fromBlock});
 
+    // let start = Date.now()
     let res = await pastEventsAsync
+    // let elapsed = Date.now() - start
+    // console.log( '===network=',this.state.network.name, "events time=", elapsed)
 
     let owners=this.state.ownersDict
     function owner(relay) {
@@ -97,7 +145,7 @@ class GsnStatus extends React.Component {
                 const url = relay.url || relay.relayUrl
                 let name = ( (url+"/").match(/\b(\w+)(\.\w+)?(:\d+)?\//)||[])[1]
                 owners[h] = {
-                  addr : h,
+                  addr: h,
                   name: name || "owner-"+(Object.keys(owners).length+1)
                    }
             }
@@ -120,7 +168,6 @@ class GsnStatus extends React.Component {
         if ( removedRelays[r.relayManager] ) {
           return
         }
-
 //r.url = 'https://34.89.42.190'
 	let timeoutId
 	let setStatus = (status,worker) => {
@@ -129,7 +176,15 @@ class GsnStatus extends React.Component {
       return
 
 	  relays[r.relayManager].status = status
-    relays[r.relayManager].worker = worker
+    if (worker) {
+      const rr = relays[r.relayManager]
+		  rr.worker = worker
+		  web3.eth.getBalance(worker).then(bal=>{
+        if ( !rr.bal )
+          rr.bal = []
+        rr.bal.push(bal/1e18)
+      })
+	  }
 	  this.updateDisplay()
 	  clearTimeout(timeoutId)
 	}
@@ -160,7 +215,7 @@ class GsnStatus extends React.Component {
           })
 
         web3.eth.getBalance(r.relayManager)
-          .then(bal => { if (relays[r.relayManager]) { relays[r.relayManager].bal = bal / 1e18; this.updateDisplay() } } )
+          .then(bal => { if (relays[r.relayManager]) { relays[r.relayManager].bal = [bal / 1e18]; this.updateDisplay() } } )
 
         let aowner = owner(r);
         // console.log( e.blockNumber, e.event, r.url, aowner )
@@ -199,7 +254,10 @@ class GsnStatus extends React.Component {
     super(props)
 
     this.state={
-      relays: []
+      relays: [],
+      hubstate: { 
+        counts:{}
+      }
     }
     let network = networks[this.props.network]
     this.state.network = network
@@ -242,7 +300,7 @@ class GsnStatus extends React.Component {
      <a name={this.props.network}></a>
      <h3>Network: {netName(this.state.network)}</h3>
       RelayHub: <Address addr={this.state.network.RelayHub} network={this.state.network} /> 
-      <b>{this.state.hubversion}</b>
+      <HubStatus ver={this.state.hubstate.version} counts={this.state.hubstate.counts} minstake={this.state.hubstate.minstake} unstakedelay={this.state.hubstate.unstakedelay} />
       <br/>
       Relays:
       {/* {this.state.relays.map(relay=><RelayInfo relay={relay} network={this.state.network} />)} */}

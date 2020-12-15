@@ -73,6 +73,47 @@ let HubStatus = ( {ver, counts, minstake, unstakedelay } ) => <span>
       }
   </span>
 
+function RelayStats({row, eventsInfo, worker}) {
+  if ( !eventsInfo ) return <span/>
+  const {hour,day,week, month } = workerStats(eventsInfo, worker)
+  return <div>
+        {hour}/{day}/{week}/{month}
+      </div>
+}
+
+    async function collectEventsInfo(web3,hub) {
+        //calc time per block:
+        const {number, timestamp}= await web3.eth.getBlock('latest')
+        const N=100000
+        const ts = await web3.eth.getBlock(number-N).then(b=>b.timestamp)
+        const secPerBlock = (timestamp-ts) / N
+        const hourInBlocks = Math.trunc(3600 / secPerBlock)
+        const events = await hub.getPastEvents('TransactionRelayed', {fromBlock: number- hourInBlocks*24*40})
+        return {events, number, hourInBlocks}
+    }
+    function collectStats(collectEventsInfoRes, filter) {
+
+        const {events, number, hourInBlocks} = collectEventsInfoRes
+        let hour=0, day=0, week=0, month=0
+        events.filter(filter).forEach(e=>{
+          const blockPast = number - e.blockNumber
+          if ( blockPast < hourInBlocks ) hour++
+          if ( blockPast < hourInBlocks* 24 ) day++
+          if ( blockPast < hourInBlocks* 24*7 ) week++
+          if ( blockPast < hourInBlocks* 24*30 ) month++
+
+        })
+        return {hour,day,week,month}
+
+    }
+    function hubStats(collectEventsInfoRes) {
+        return collectStats(collectEventsInfoRes, ()=>true)
+    }
+
+    function workerStats(collectEventsInfoRes, worker) {
+        return collectStats(collectEventsInfoRes, e=>e.returnValues.relayWorker.toLowerCase() === worker.toLowerCase())
+    }
+
 let Address = ({addr,network} ) => <a href={network.etherscan+addr} target="etherscan" >
       <font family="monospaces">{addr?addr.replace(/^0x/, "").slice(0,8)+"\u2026":'null'} </font></a>
 
@@ -89,29 +130,11 @@ class GsnStatus extends React.Component {
     hub.methods.minimumStake().call().then(s=>{this.state.hubstate.minstake =s.toString()/1e18})
     hub.methods.minimumUnstakeDelay().call().then(s=>{this.state.hubstate.unstakedelay =s.toString()})
     hub.methods.versionHub().call().then(ver=>{this.state.hubstate.version = ver.replace(/\+opengsn.*/,'')}).catch(err=>this.state.hubstate.version='(no version)')
-    async function hubStats(web3, hub, stat) {
-        //calc time per block:
-        const {number, timestamp}= await web3.eth.getBlock('latest')
-        const N=100000
-        const ts = await web3.eth.getBlock(number-N).then(b=>b.timestamp)
-        const secPerBlock = (timestamp-ts) / N
-        const hourInBlocks = Math.trunc(3600 / secPerBlock)
-        let hour=0, day=0, week=0, month=0
-        const events = await hub.getPastEvents('TransactionRelayed', {fromBlock: number- hourInBlocks*24*40})
-        events.forEach(e=>{
-          const blockPast = number - e.blockNumber
-          if ( blockPast < hourInBlocks ) hour++
-          if ( blockPast < hourInBlocks* 24 ) day++
-          if ( blockPast < hourInBlocks* 24*7 ) week++
-          if ( blockPast < hourInBlocks* 24*30 ) month++
 
-        })
-        // console.log( 'hubstats:', {hour,day,week,month, totalEvents:events.length})
 
-        return {hour,day,week,month}
-    }
-    hubStats(web3, hub).then(ret=>{
-      this.state.hubstate.counts=ret
+    collectEventsInfo(web3,hub).then(res=>{
+      this.eventsInfo=res
+      this.state.hubstate.counts = hubStats(this.eventsInfo)
       this.updateDisplay()
     })
     this.state.relaysDict={}
@@ -282,7 +305,7 @@ class GsnStatus extends React.Component {
     worker : (val) => <Address addr={val} network={this.state.network} />,
     bal : (val) => <Balance val={val} />,
     deposit : (val) => <Balance val={val} />,
-    url : (val) =><RelayUrl url={val} />,
+    url : (val,row) =><><RelayUrl url={val} /><RelayStats worker={row.worker} eventsInfo={this.eventsInfo} /></>,
     status: (val) => <Status status={val} />
 
   }
@@ -323,9 +346,9 @@ function MyHeaderCol({header}) {
   return header.title || header.id
 }
 
-function MyDataCol({val, header}) {
+function MyDataCol({val, row, header}) {
   if ( header.render )
-    return header.render(val)
+    return header.render(val,row)
   return val || header.nullValue || ""
 }
 function MyTable({
@@ -341,7 +364,7 @@ function MyTable({
         </tr></thead>}
         <tbody>
           {data && data.map((row,i)=><tr key={i}>
-            {columns.map((h,j)=><td key={j}><MyDataCol val={row[h.id|| h.dataIndex]} header={h}/></td>)}
+            {columns.map((h,j)=><td key={j}><MyDataCol val={row[h.id|| h.dataIndex]} row={row} header={h}/></td>)}
           </tr>)}
         </tbody>
 

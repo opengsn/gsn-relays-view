@@ -81,6 +81,7 @@ class GsnStatus extends React.Component {
           let relayManager = e.returnValues.relayManager
           removedRelays[relayManager] = 1
           delete relays[relayManager]
+          this.updateDisplay()
         }
       })
     })
@@ -93,7 +94,7 @@ class GsnStatus extends React.Component {
             let h = relay.owner
             if ( !owners[h] ) {
                 const url = relay.url || relay.relayUrl
-                let name = (url+"/").match(/\b(\w+)\.\w+\//)[1]
+                let name = ( (url+"/").match(/\b(\w+)(\.\w+)?(:\d+)?\//)||[])[1]
                 owners[h] = {
                   addr : h,
                   name: name || "owner-"+(Object.keys(owners).length+1)
@@ -115,6 +116,10 @@ class GsnStatus extends React.Component {
           // counter=1;
           r.url = "https://relay1.duckdns.org:1234"
         }
+        if ( removedRelays[r.relayManager] ) {
+          return
+        }
+
 //r.url = 'https://34.89.42.190'
 	let timeoutId
 	let setStatus = (status,worker) => {
@@ -300,7 +305,7 @@ class App extends React.Component {
 
     return <>
      <Card.Body>
-    <h2>&nbsp;<img src="favicon.ico" height="50px"/> OpenGSN Relayers</h2>
+    <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> OpenGSN Relayers</h2>
         <button onClick={()=>globalevent.emit('refresh')}>Refresh</button>
 
       {false &&<>

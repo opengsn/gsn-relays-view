@@ -205,10 +205,12 @@ class GsnStatus extends React.Component {
 		  web3.eth.getBalance(worker).then(bal=>{
         if ( !rr.bal )
           rr.bal = []
-        rr.bal.push(bal/1e18)
+        rr.bal[1] = bal / 1e18
+        this.updateDisplay()
       })
-	  }
-	  this.updateDisplay()
+	  } else {
+      this.updateDisplay()
+    }
 	  clearTimeout(timeoutId)
 	}
 
@@ -238,7 +240,14 @@ class GsnStatus extends React.Component {
           })
 
         web3.eth.getBalance(r.relayManager)
-          .then(bal => { if (relays[r.relayManager]) { relays[r.relayManager].bal = [bal / 1e18]; this.updateDisplay() } } )
+          .then(bal => {
+            const rr = relays[r.relayManager]
+            if (rr) {
+              if ( !rr.bal) rr.bal=[]
+              rr.bal[0] = bal / 1e18;
+              this.updateDisplay()
+            }
+          } )
 
         let aowner = owner(r);
         // console.log( e.blockNumber, e.event, r.url, aowner )
@@ -303,7 +312,7 @@ class GsnStatus extends React.Component {
   renderers = {
     addr : (val) => <Address addr={val} network={this.state.network} />,
     worker : (val) => <Address addr={val} network={this.state.network} />,
-    bal : (val) => <Balance val={val} />,
+    bal : (val) => <> <Balance val={(val||[])[0]} /> <Balance val={(val||[])[1]} /> </>,
     deposit : (val) => <Balance val={val} />,
     url : (val,row) =><><RelayUrl url={val} /><RelayStats worker={row.worker} eventsInfo={this.eventsInfo} /></>,
     status: (val) => <Status status={val} />

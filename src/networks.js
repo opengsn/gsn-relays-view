@@ -46,11 +46,18 @@ export const networks = {
         etherscan: "https://blockscout.com/etc/kotti/address/"
     },
 
-    testbnb: {
+    testbsc: {
       name: "Binance-Testnet",
       url: "https://data-seed-prebsc-1-s1.binance.org:8545",
       etherscan: "https://testnet.bscscan.com/address/",
       RelayHub: "0x515B28E7638aC923f0dB63298658167A4e4dB770",
+    },
+
+    bsc: {
+      name: "Binance-BSC",
+      url: "https://bsc-dataseed.binance.org/",
+      etherscan: "https://bscscan.com/address/",
+      RelayHub: "0x2ebc08948d0DD5D034FBE0b1084C65f57eF7D0bC",
     },
 
 /*

@@ -61,8 +61,19 @@ let Balance = ({val, counter=0}) => <span> { toList(val).map(val=>{
   return <span key={++counter}>{val || val === 0 ? val.toFixed(6) : "n/a"}<br/></span>
 }) } </span>
 
-let HubStatus = ( {ver, counts, minstake, unstakedelay } ) => <span>
-      <b>{ver}</b> MinStake (eth)={minstake} Unstake blocks={unstakedelay}
+function formatDays(days) {
+  if ( !days) return ''
+  if (days>2)
+    return Math.trunc(days)+' days'
+  const hours = days*24
+  if (hours > 2)
+    return Math.trunc(hours) +' hrs'
+
+  const min = hours*60
+  return Math.trunc(min)+' mins'
+}
+let HubStatus = ( {ver, counts, minstake, unstakedelay, unstakedelayDays } ) => <span>
+      <b>{ver}</b> MinStake (eth)={minstake} Unstake blocks={unstakedelay} ({formatDays(unstakedelayDays)})
       { counts.month !==0 && <table border="1"><tbody><tr>
         <td>Counts in the past</td>
         <td> hour:{counts.hour}</td>
@@ -128,7 +139,13 @@ class GsnStatus extends React.Component {
     let hub = new web3.eth.Contract(RelayHubAbi, this.state.network.RelayHub)
 
     hub.methods.minimumStake().call().then(s=>{this.state.hubstate.minstake =s.toString()/1e18})
-    hub.methods.minimumUnstakeDelay().call().then(s=>{this.state.hubstate.unstakedelay =s.toString()})
+    hub.methods.minimumUnstakeDelay().call().then(async (s)=>{
+      this.state.hubstate.unstakedelay = s.toString()
+      const curblock = await web3.eth.getBlock('latest')
+      const pastblock = await web3.eth.getBlock(curblock.number-s.toString())
+      this.state.hubstate.unstakedelayDays = (curblock.timestamp-pastblock.timestamp)/3600/24
+
+    })
     hub.methods.versionHub().call().then(ver=>{this.state.hubstate.version = ver.replace(/\+opengsn.*/,'')}).catch(err=>this.state.hubstate.version='(no version)')
 
 
@@ -332,7 +349,7 @@ class GsnStatus extends React.Component {
      <a name={this.props.network}></a>
      <h3>Network: {netName(this.state.network)}</h3>
       RelayHub: <Address addr={this.state.network.RelayHub} network={this.state.network} /> 
-      <HubStatus ver={this.state.hubstate.version} counts={this.state.hubstate.counts} minstake={this.state.hubstate.minstake} unstakedelay={this.state.hubstate.unstakedelay} />
+      <HubStatus ver={this.state.hubstate.version} counts={this.state.hubstate.counts} minstake={this.state.hubstate.minstake} unstakedelay={this.state.hubstate.unstakedelay} unstakedelayDays={this.state.hubstate.unstakedelayDays} />
       <br/>
       Relays:
       {/* {this.state.relays.map(relay=><RelayInfo relay={relay} network={this.state.network} />)} */}

@@ -11,6 +11,8 @@ import cookie from 'react-cookies'
 import EventEmitter from 'events'
 import { networks } from './networks'
 import {NetworkLinks} from "./components/NetworkLinks";
+
+import {SparkLine} from "./SparkLine";
 // let p = new RelayProvider(global.web3.currentProvider)
 
 
@@ -72,7 +74,7 @@ function formatDays(days) {
   const min = hours*60
   return Math.trunc(min)+' mins'
 }
-let HubStatus = ( {ver, counts, minstake, unstakedelay, unstakedelayDays } ) => <span>
+let HubStatus = ( {ver, net, countsPerDay, counts, minstake, unstakedelay, unstakedelayDays } ) => <span>
       <b>{ver}</b> MinStake (eth)={minstake} Unstake blocks={unstakedelay} ({formatDays(unstakedelayDays)})
       { counts.month !==0 && <table border="1"><tbody><tr>
         <td>Counts in the past</td>
@@ -80,15 +82,18 @@ let HubStatus = ( {ver, counts, minstake, unstakedelay, unstakedelayDays } ) => 
         <td> day:{counts.day} </td>
         <td> week:{counts.week}</td>
         <td> month:{counts.month}</td>
+        <td><SparkLine data={countsPerDay}/></td>
         </tr></tbody></table>
       }
   </span>
 
-function RelayStats({row, eventsInfo, worker}) {
+function RelayStats({mgr, eventsInfo}) {
   if ( !eventsInfo ) return <span/>
-  const {hour,day,week, month } = workerStats(eventsInfo, worker)
+  const {hour,day,week, month } = mgrStats(eventsInfo, mgr)
+  const data = sparklineData(eventsInfo, mgr)
   return <div>
         {hour}/{day}/{week}/{month}
+      { month!==0 && <SparkLine data={data}></SparkLine> }
       </div>
 }
 
@@ -98,31 +103,57 @@ function RelayStats({row, eventsInfo, worker}) {
         const N=100000
         const ts = await web3.eth.getBlock(number-N).then(b=>b.timestamp)
         const secPerBlock = (timestamp-ts) / N
-        const hourInBlocks = Math.trunc(3600 / secPerBlock)
-        const events = await hub.getPastEvents('TransactionRelayed', {fromBlock: number- hourInBlocks*24*40})
-        return {events, number, hourInBlocks}
+        const blocksPerHour = Math.trunc(3600 / secPerBlock)
+        const events = await hub.getPastEvents('TransactionRelayed', {fromBlock: number- blocksPerHour*24*40})
+        return {events, number, blocksPerHour}
     }
     function collectStats(collectEventsInfoRes, filter) {
 
-        const {events, number, hourInBlocks} = collectEventsInfoRes
+        const {events, number, blocksPerHour} = collectEventsInfoRes
         let hour=0, day=0, week=0, month=0
         events.filter(filter).forEach(e=>{
           const blockPast = number - e.blockNumber
-          if ( blockPast < hourInBlocks ) hour++
-          if ( blockPast < hourInBlocks* 24 ) day++
-          if ( blockPast < hourInBlocks* 24*7 ) week++
-          if ( blockPast < hourInBlocks* 24*30 ) month++
+          if ( blockPast < blocksPerHour ) hour++
+          if ( blockPast < blocksPerHour* 24 ) day++
+          if ( blockPast < blocksPerHour* 24*7 ) week++
+          if ( blockPast < blocksPerHour* 24*30 ) month++
 
         })
         return {hour,day,week,month}
+    }
 
+    function mgrFilter(worker) {
+        return e=>e.returnValues.relayManager.toLowerCase() === worker.toLowerCase()
+    }
+
+    function sparklineData(collectEventsInfoRes, mgr) {
+        if ( !collectEventsInfoRes) return []
+        const filter = mgr ? mgrFilter(mgr) : (()=>true)
+        const {events, number, blocksPerHour} = collectEventsInfoRes
+        const historyDays = 30
+        let blocksPerDay = 24 * blocksPerHour;
+        const lastMonthBlock = number - historyDays * blocksPerDay
+
+        const counts =
+            events.filter(filter).filter(e=>e.blockNumber > lastMonthBlock)
+            .map( e=>  Math.round((e.blockNumber-lastMonthBlock)/blocksPerDay))
+            .reduce((list,val)=>{list[val] = (list[val]||0)+1; return list}, [])
+
+        //counts is a "sparse" array, with counts in all days, but "empty" on zero-days.
+        // these zero-days are not "real" array elements: e.g. not returned by "forEach" etc.
+
+        const ret = new Array(historyDays)
+        for ( let i=1; i<=historyDays; i++ ) {
+            ret[i-1] = counts[i] || 0
+        }
+        return ret
     }
     function hubStats(collectEventsInfoRes) {
         return collectStats(collectEventsInfoRes, ()=>true)
     }
 
-    function workerStats(collectEventsInfoRes, worker) {
-        return collectStats(collectEventsInfoRes, e=>e.returnValues.relayWorker.toLowerCase() === worker.toLowerCase())
+    function mgrStats(collectEventsInfoRes, mgr) {
+        return collectStats(collectEventsInfoRes, mgrFilter((mgr)))
     }
 
 let Address = ({addr,network} ) => <a href={network.etherscan+addr} target="etherscan" >
@@ -331,7 +362,7 @@ class GsnStatus extends React.Component {
     worker : (val) => <Address addr={val} network={this.state.network} />,
     bal : (val) => <> <Balance val={(val||[])[0]} /> <Balance val={(val||[])[1]} /> </>,
     deposit : (val) => <Balance val={val} />,
-    url : (val,row) =><><RelayUrl url={val} /><RelayStats worker={row.worker} eventsInfo={this.eventsInfo} /></>,
+    url : (val,row) =><><RelayUrl url={val} /><RelayStats mgr={row.addr} worker={row.worker} eventsInfo={this.eventsInfo} /></>,
     status: (val) => <Status status={val} />
 
   }
@@ -339,17 +370,15 @@ class GsnStatus extends React.Component {
     return arr.map(h=>( {title:h, dataIndex:h, render: this.renderers[h] }))
   }
  render() {
-
       //just to avoid "xDai xDai" (a group with a single network)
   const netName = ({name,group})=>group===name ? group : group+" "+name
-
   return ( <>
     <Card> <Card.Body>
 
      <a name={this.props.network}></a>
      <h3>Network: {netName(this.state.network)}</h3>
       RelayHub: <Address addr={this.state.network.RelayHub} network={this.state.network} /> 
-      <HubStatus ver={this.state.hubstate.version} counts={this.state.hubstate.counts} minstake={this.state.hubstate.minstake} unstakedelay={this.state.hubstate.unstakedelay} unstakedelayDays={this.state.hubstate.unstakedelayDays} />
+      <HubStatus net={this.state.network.name} countsPerDay={sparklineData(this.eventsInfo)} ver={this.state.hubstate.version} counts={this.state.hubstate.counts} minstake={this.state.hubstate.minstake} unstakedelay={this.state.hubstate.unstakedelay} unstakedelayDays={this.state.hubstate.unstakedelayDays} />
       <br/>
       Relays:
       {/* {this.state.relays.map(relay=><RelayInfo relay={relay} network={this.state.network} />)} */}

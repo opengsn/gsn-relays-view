@@ -305,7 +305,7 @@ class App extends React.Component {
 
     return <>
      <Card.Body>
-    <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> OpenGSN Relayers</h2>
+    <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> GSN Relay Servers</h2>
         <button onClick={()=>globalevent.emit('refresh')}>Refresh</button>
 
       {false &&<>

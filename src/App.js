@@ -66,16 +66,16 @@ let Balance = ({val, counter=0}) => <span> { toList(val).map(val=>{
 function formatDays(days) {
   if ( !days) return ''
   if (days>2)
-    return Math.trunc(days)+' days'
+    return Math.round(days)+' days'
   const hours = days*24
   if (hours > 2)
-    return Math.trunc(hours) +' hrs'
+    return Math.round(hours) +' hrs'
 
   const min = hours*60
-  return Math.trunc(min)+' mins'
+  return Math.round(min)+' mins'
 }
-let HubStatus = ( {ver, net, countsPerDay, counts, minstake, unstakedelay, unstakedelayDays } ) => <span>
-      <b>{ver}</b> MinStake (eth)={minstake} Unstake blocks={unstakedelay} ({formatDays(unstakedelayDays)})
+let HubStatus = ( {ver, net, token, countsPerDay, counts, minstake, unstakedelay, unstakedelayDays } ) => <span>
+      <b>{ver}</b> MinStake ({token})={minstake} Unstake blocks={unstakedelay} ({formatDays(unstakedelayDays)})
       { counts.month !==0 && <table border="1"><tbody><tr>
         <td>Counts in the past</td>
         <td> hour:{counts.hour}</td>
@@ -87,12 +87,13 @@ let HubStatus = ( {ver, net, countsPerDay, counts, minstake, unstakedelay, unsta
       }
   </span>
 
+
 function RelayStats({mgr, eventsInfo}) {
   if ( !eventsInfo ) return <span/>
   const {hour,day,week, month } = mgrStats(eventsInfo, mgr)
   const data = sparklineData(eventsInfo, mgr)
   return <div>
-        {hour}/{day}/{week}/{month}
+      {hour}/{day}/{week}/{month}
       { month!==0 && <SparkLine data={data}></SparkLine> }
       </div>
 }
@@ -107,6 +108,7 @@ function RelayStats({mgr, eventsInfo}) {
         const events = await hub.getPastEvents('TransactionRelayed', {fromBlock: number- blocksPerHour*24*40})
         return {events, number, blocksPerHour}
     }
+
     function collectStats(collectEventsInfoRes, filter) {
 
         const {events, number, blocksPerHour} = collectEventsInfoRes
@@ -148,6 +150,7 @@ function RelayStats({mgr, eventsInfo}) {
         }
         return ret
     }
+
     function hubStats(collectEventsInfoRes) {
         return collectStats(collectEventsInfoRes, ()=>true)
     }
@@ -378,7 +381,7 @@ class GsnStatus extends React.Component {
      <a name={this.props.network}></a>
      <h3>Network: {netName(this.state.network)}</h3>
       RelayHub: <Address addr={this.state.network.RelayHub} network={this.state.network} /> 
-      <HubStatus net={this.state.network.name} countsPerDay={sparklineData(this.eventsInfo)} ver={this.state.hubstate.version} counts={this.state.hubstate.counts} minstake={this.state.hubstate.minstake} unstakedelay={this.state.hubstate.unstakedelay} unstakedelayDays={this.state.hubstate.unstakedelayDays} />
+      <HubStatus net={this.state.network.name} token={this.state.network.token} countsPerDay={sparklineData(this.eventsInfo)} ver={this.state.hubstate.version} counts={this.state.hubstate.counts} minstake={this.state.hubstate.minstake} unstakedelay={this.state.hubstate.unstakedelay} unstakedelayDays={this.state.hubstate.unstakedelayDays} />
       <br/>
       Relays:
       {/* {this.state.relays.map(relay=><RelayInfo relay={relay} network={this.state.network} />)} */}

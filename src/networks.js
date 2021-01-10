@@ -57,7 +57,7 @@ export const networks = {
       name: "Binance-BSC",
       url: "https://bsc-dataseed.binance.org/",
       etherscan: "https://bscscan.com/address/",
-      RelayHub: "0x2ebc08948d0DD5D034FBE0b1084C65f57eF7D0bC",
+      RelayHub: "0x3A7083E709BCCd0Fc5fb53cC0Ce9DBd3b5a82DcB",
     },
 
 /*

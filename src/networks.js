@@ -59,6 +59,13 @@ export const networks = {
       etherscan: "https://bscscan.com/address/",
       RelayHub: "0x3A7083E709BCCd0Fc5fb53cC0Ce9DBd3b5a82DcB",
     },
+    xdai: {
+        name: "xDAI",
+        token: 'DAI',
+        url:"https://dai.poa.network",
+        etherscan:"https://blockscout.com/poa/xdai/address/",
+        RelayHub: "0x63dd60b79cb8e3d2fa20a6d2ec92e101553a3920",      
+    },
 
 /*
     kovanBeta3:  {
@@ -100,7 +107,7 @@ export const networks = {
         url: "https://mainnet.infura.io/v3/" + infura,
         etherscan: "https://etherscan.io/search?q="
     },
-*/
+
 
     xdaiv2alpha: {
         name: "xDAI-V2 alpha",
@@ -108,7 +115,7 @@ export const networks = {
         etherscan:"https://blockscout.com/poa/xdai/address/",
         RelayHub: "0xA58B6fC9264ce507d0B0B477ceE31674341CB27e",      
     },
-/*    
+    
     kovanv09:  {
         name: "Kovan 0.9",
         "RelayHub": "0x2E0d94754b348D208D64d52d78BcD443aFA9fa52",

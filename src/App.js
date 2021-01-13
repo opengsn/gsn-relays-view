@@ -234,7 +234,8 @@ class GsnStatus extends React.Component {
   return ( <>
     <Card> <Card.Body>
 
-     <h3>Network: {this.state.network.name}</h3>
+	<a name={this.props.network}>
+     <h3>Network: {this.state.network.name}</h3> </a>
       RelayHub: <Address addr={this.state.network.RelayHub} network={this.state.network} /> 
       <b>{this.state.hubversion}</b>
       <br/>
@@ -306,6 +307,8 @@ class App extends React.Component {
     return <>
      <Card.Body>
     <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> GSN Relay Servers</h2>
+
+	Jump to: {Object.keys(networks).map(net=>{ return <> <a href={"#"+net}>{networks[net].name}</a> , </>  })}
         <button onClick={()=>globalevent.emit('refresh')}>Refresh</button>
 
       {false &&<>

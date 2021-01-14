@@ -38,6 +38,14 @@ export const networks = {
         etherscan: "https://etherscan.io/search?q="
     },
 
+    etc:  {
+        name: "Ethereum Classic",
+        token: 'ETC',
+        RelayHub: "0x183443070efdc1B18eb3E232F67bff4746c803E2",
+        url: "https://etc.connect.bloq.cloud/v1/roast-blossom-sentence",
+        etherscan: "https://blockscout.com/etc/mainnet/address/"
+    },
+
     kotti:  {
         name: "ETC-Kotti",
         RelayHub: "0x28708de1d5c681427C3F36170929D31184C113B4",

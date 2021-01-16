@@ -10,6 +10,7 @@ import axios from 'axios'
 import cookie from 'react-cookies'
 import EventEmitter from 'events'
 import { networks } from './networks'
+import {NetworkLinks} from "./components/NetworkLinks";
 // let p = new RelayProvider(global.web3.currentProvider)
 
 
@@ -231,11 +232,15 @@ class GsnStatus extends React.Component {
     return arr.map(h=>( {title:h, dataIndex:h, render: this.renderers[h] }))
   }
  render() {
+
+      //just to avoid "xDai xDai" (a group with a single network)
+  const netName = ({name,group})=>group===name ? group : group+" "+name
+
   return ( <>
     <Card> <Card.Body>
 
-	<a name={this.props.network}>
-     <h3>Network: {this.state.network.name}</h3> </a>
+     <a name={this.props.network}></a>
+     <h3>Network: {netName(this.state.network)}</h3>
       RelayHub: <Address addr={this.state.network.RelayHub} network={this.state.network} /> 
       <b>{this.state.hubversion}</b>
       <br/>
@@ -308,7 +313,7 @@ class App extends React.Component {
      <Card.Body>
     <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> GSN Relay Servers</h2>
 
-	Jump to: {Object.keys(networks).map(net=>{ return <> <a href={"#"+net}>{networks[net].name}</a> , </>  })}
+         <NetworkLinks networks={networks} />
         <button onClick={()=>globalevent.emit('refresh')}>Refresh</button>
 
       {false &&<>

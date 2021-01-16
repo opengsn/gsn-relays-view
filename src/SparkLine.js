@@ -5,9 +5,6 @@ export class SparkLine extends React.Component {
     constructor(props) {
         super(props)
         this.sparkRef = React.createRef()
-        if ( props.data.length>0 ) {
-            console.log('=== spark data=', props.id, props.data)
-        }
     }
 
     render() {

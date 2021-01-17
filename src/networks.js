@@ -6,7 +6,8 @@ export const networks = {
     mainnet: {
         group: "Ethereum",
         name: "Mainnet",
-        RelayHub: "0x515e39f12590a94B102903363336AF9761ebF621",
+        RelayHub: "0xB1E47968aD4909b9eb693c212feA22D0419D2D56",
+        //old RelayHub: "0x515e39f12590a94B102903363336AF9761ebF621",
         url: "https://mainnet.infura.io/v3/" + infura,
         etherscan: "https://etherscan.io/search?q="
     },

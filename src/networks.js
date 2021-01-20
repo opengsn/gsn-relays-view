@@ -70,8 +70,8 @@ export const networks = {
 
     bsc: {
         group: "Binance",
-        token: 'BNB',
         name: "Smart Chain",
+        token: 'BNB',
         url: "https://bsc-dataseed.binance.org/",
         etherscan: "https://bscscan.com/address/",
         RelayHub: "0x3A7083E709BCCd0Fc5fb53cC0Ce9DBd3b5a82DcB",
@@ -85,13 +85,7 @@ export const networks = {
       etherscan: "https://testnet.bscscan.com/address/",
       RelayHub: "0x515B28E7638aC923f0dB63298658167A4e4dB770"
     },
-
-    bsc: {
-      name: "Binance-BSC",
-      url: "https://bsc-dataseed.binance.org/",
-      etherscan: "https://bscscan.com/address/",
-      RelayHub: "0x3A7083E709BCCd0Fc5fb53cC0Ce9DBd3b5a82DcB",
-    },
+    
     xdai: {
         group: "xDAI",
         name: "xDAI",

@@ -24,6 +24,8 @@ import {SparkLine} from "./SparkLine";
 let removedRelays = {}
 let globalevent = new EventEmitter()
 
+//# of active relayers per network (displayed by NetworkLinks)
+let relayCounts = {}
 //new Web3.providers.HttpProvider(network))
 //let hubaddr = '0xD216153c06E857cD7f72665E0aF1d7D82172F494'
 
@@ -250,6 +252,10 @@ class GsnStatus extends React.Component {
       return
 
 	  relays[r.relayManager].status = status
+    if ( status.level === 'green' ) {
+      const net = this.props.network
+      relayCounts[net] = relayCounts[net]+1 || 1
+    }
     if (worker) {
       const rr = relays[r.relayManager]
 		  rr.worker = worker
@@ -452,7 +458,7 @@ class App extends React.Component {
      <Card.Body>
     <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> GSN Relay Servers</h2>
 
-         <NetworkLinks networks={networks} />
+         <NetworkLinks networks={networks} relayCounts={relayCounts} />
         <button onClick={()=>globalevent.emit('refresh')}>Refresh</button>
 
       {false &&<>

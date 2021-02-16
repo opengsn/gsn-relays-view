@@ -1,6 +1,11 @@
 import React from 'react'
 import {networks} from "../networks";
 
+function RelayCounts({counts,net}) {
+    if (!counts || !counts[net]) return <></>
+    return <>({counts[net]})</>
+}
+
 /**
  * create a table of links to various networks
  * the networks array is keyed by network unique ID (which we use as anchor)
@@ -8,6 +13,22 @@ import {networks} from "../networks";
  * within each group, the "mainnet" is the first.
  */
 export class NetworkLinks extends React.Component {
+
+    updateCount=5
+    
+    //ugly update: global relayCounts is updated, and we want to refresh display
+    // when it does..
+    // (this component is rendered once, from the <App> object)
+    updateCountsState() {
+        this.setState( {relayCounts: this.props.relayCounts})
+        if ( this.updateCount-- > 0 ) {
+            setTimeout(this.updateCountsState.bind(this), 2000)
+        }
+    }
+
+    componentDidMount() {
+        setTimeout(this.updateCountsState.bind(this), 1000)
+    }
 
     render() {
         let networkArray = Object.values(networks);
@@ -21,7 +42,7 @@ export class NetworkLinks extends React.Component {
                 <td>{g}:</td>
                 <td>
                     {netGroups[g].map((net, index) => {
-                        return <span key={index}> {index > 0 ? ", " : ""}<a href={"#" + net}>{networks[net].name}</a> </span>
+                        return <span key={index}> {index > 0 ? ", " : ""}<a href={"#" + net}>{networks[net].name}</a> <RelayCounts counts={this.props.relayCounts} net={net} /> </span>
                     })}
                 </td>
             </tr>)}

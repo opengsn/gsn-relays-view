@@ -87,6 +87,14 @@ export const networks = {
         RelayHub: "0x63dd60b79cb8e3d2fa20a6d2ec92e101553a3920",
     },
 
+    heco: {
+        group:'HECO',
+        name: 'Huobi Eco Chain',
+        url: 'https://heco.mytokenpocket.vip',
+        etherscan: "https://hecoinfo.com/address/",
+        RelayHub: "0xDc87dE4AFFAaAE38d6875D5690cA2819E8D330c7"
+    }
+
     /*
         kovanBeta3:  {
             name: "Kovan-V2 beta.3",

@@ -37,7 +37,7 @@ export class NetworkLinks extends React.Component {
             [g]: Object.keys(networks).filter(net => networks[net].group === g)
         }), {})
 
-        return <table>
+        return <table><tbody>
             {Object.keys(netGroups).map(g => <tr key={g}>
                 <td>{g}:</td>
                 <td>
@@ -46,6 +46,6 @@ export class NetworkLinks extends React.Component {
                     })}
                 </td>
             </tr>)}
-        </table>
+        </tbody></table>
     }
 }

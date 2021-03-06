@@ -453,6 +453,11 @@ class App extends React.Component {
 
   render() {
 
+    let onlyNet
+    const m = window.location.href.match(/#.*only=([,\w]+)/)
+    if ( m ) {
+      onlyNet = m[1].split(/,/)
+    }
 
     return <>
      <Card.Body>
@@ -468,7 +473,10 @@ class App extends React.Component {
            <Form.Check type="checkbox" label="show owners" checked={this.state.showOwners} onChange={()=>this.toggle('showOwners')}/>
         </ButtonGroup>
       </>}
-      { Object.keys(networks).filter( net=>this.state.showAll ? true : net==="mainnet" ).map( net=> <GsnStatus key={net} network={net} showOwners={this.state.showOwners} /> ) }
+      { Object.keys(networks)
+            .filter( net=>this.state.showAll ? true : net==="mainnet" )
+            .filter( net=> onlyNet === undefined || onlyNet.includes(net) )
+            .map( net=> <GsnStatus key={net} network={net} showOwners={this.state.showOwners} /> ) }
       <button onClick={()=>globalevent.emit('refresh')}>Refresh</button>
 
     </Card.Body></>

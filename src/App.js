@@ -15,6 +15,70 @@ import {NetworkLinks} from "./components/NetworkLinks";
 import {SparkLine} from "./SparkLine";
 // let p = new RelayProvider(global.web3.currentProvider)
 
+//single-event ABI, just for handling alpha "TransactionRelayed" event.
+const RelayHubAlphaAbi = [
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "relayManager",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "relayWorker",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "from",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "address",
+                    "name": "to",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "address",
+                    "name": "paymaster",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "bytes4",
+                    "name": "selector",
+                    "type": "bytes4"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "enum IRelayHub.RelayCallStatus",
+                    "name": "status",
+                    "type": "uint8"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "bytes",
+                    "name": "returnValue",
+                    "type": "bytes"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "charge",
+                    "type": "uint256"
+                }
+            ],
+            "name": "TransactionRelayed",
+            "type": "event"
+        },
+]
 
 // global.web3 = new Web3(p)
 // let addr='0x'+'0'.repeat(40)
@@ -107,7 +171,14 @@ function RelayStats({mgr, eventsInfo}) {
         const ts = await web3.eth.getBlock(number-N).then(b=>b.timestamp)
         const secPerBlock = (timestamp-ts) / N
         const blocksPerHour = Math.trunc(3600 / secPerBlock)
-        const events = await hub.getPastEvents('TransactionRelayed', {fromBlock: number- blocksPerHour*24*40})
+        let events = await hub.getPastEvents('TransactionRelayed', {fromBlock: number- blocksPerHour*24*40, toBlock: number})
+        //hack to support old (alpha) relayhub events
+        if ( events.length===0 ) {
+          const hubAlpha = new web3.eth.Contract(RelayHubAlphaAbi, hub._address)
+
+          events = await hubAlpha.getPastEvents('TransactionRelayed', {fromBlock: number- blocksPerHour*24*40, toBlock: number})
+        }
+        
         return {events, number, blocksPerHour}
     }
 

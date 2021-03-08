@@ -3,9 +3,27 @@ const infura = (document.location.href.match(/#.*infura=([^&]*)/) || [])[1] || '
 
 export const networks = {
 
+    xdai220: {
+        group: "New 2.2.0",
+        name: "xDAI v2.2.0",
+        token: 'DAI',
+        url: "https://dai.poa.network",
+        etherscan: "https://blockscout.com/poa/xdai/address/",
+        RelayHub: "0x67e9A521bce14f3180F8E625E0aE1db50afABd77",      
+    },
+
+    rinkeby220: {
+        group: "New 2.2.0",
+        name: "Rinkeby v2.2.0",
+        token: 'rETH',
+        url: "https://rinkeby.infura.io/v3/" + infura,
+        etherscan: "https://rinkeby.etherscan.io/search?q=",
+        RelayHub: "0xc7a0f06E4aE500B14002A40da2Cb3E449cE0b122",
+    },
+
     mainnet: {
         group: "Ethereum",
-	token: 'ETH',
+    	token: 'ETH',
         name: "Mainnet",
         RelayHub: "0xB1E47968aD4909b9eb693c212feA22D0419D2D56",
         //old RelayHub: "0x515e39f12590a94B102903363336AF9761ebF621",
@@ -95,6 +113,7 @@ export const networks = {
         RelayHub: "0x63dd60b79cb8e3d2fa20a6d2ec92e101553a3920",      
     },
 
+
 /*
     kovanBeta3:  {
         name: "Kovan-V2 beta.3",
@@ -136,7 +155,7 @@ export const networks = {
         etherscan: "https://etherscan.io/search?q="
     },
 
-
+*/
     xdaiv2alpha: {
         name: "xDAI-V2 alpha",
         token: 'DAI',
@@ -144,7 +163,7 @@ export const networks = {
         etherscan:"https://blockscout.com/poa/xdai/address/",
         RelayHub: "0xA58B6fC9264ce507d0B0B477ceE31674341CB27e",      
     },
-    
+/*    
     kovanv09:  {
         name: "Kovan 0.9",
         "RelayHub": "0x2E0d94754b348D208D64d52d78BcD443aFA9fa52",

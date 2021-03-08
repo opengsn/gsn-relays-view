@@ -188,6 +188,7 @@ class GsnStatus extends React.Component {
     collectEventsInfo(web3,hub).then(res=>{
       this.eventsInfo=res
       this.state.hubstate.counts = hubStats(this.eventsInfo)
+    }).finally(()=>{
       this.updateDisplay()
     })
     this.state.relaysDict={}

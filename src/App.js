@@ -9,12 +9,76 @@ import StakeManagerAbi from "@opengsn/gsn/dist/src/common/interfaces/IStakeManag
 import axios from 'axios'
 import cookie from 'react-cookies'
 import EventEmitter from 'events'
-import { networks } from './networks'
+// import { networks } from './networks'
 import {NetworkLinks} from "./components/NetworkLinks";
 
 import {SparkLine} from "./SparkLine";
+import { logWrap } from '@opengsn/gsn/dist/src/common/logWrapper'
+import { sleep } from '@opengsn/gsn/dist/src/common/Utils'
 // let p = new RelayProvider(global.web3.currentProvider)
 
+const getConfigurationAbi = [
+  {
+    'inputs': [],
+    'name': 'getConfiguration',
+    'outputs': [
+      {
+        'components': [
+          {
+            'internalType': 'uint256',
+            'name': 'maxWorkerCount',
+            'type': 'uint256'
+          },
+          {
+            'internalType': 'uint256',
+            'name': 'gasReserve',
+            'type': 'uint256'
+          },
+          {
+            'internalType': 'uint256',
+            'name': 'postOverhead',
+            'type': 'uint256'
+          },
+          {
+            'internalType': 'uint256',
+            'name': 'gasOverhead',
+            'type': 'uint256'
+          },
+          {
+            'internalType': 'uint256',
+            'name': 'maximumRecipientDeposit',
+            'type': 'uint256'
+          },
+          {
+            'internalType': 'uint256',
+            'name': 'minimumUnstakeDelay',
+            'type': 'uint256'
+          },
+          {
+            'internalType': 'uint256',
+            'name': 'minimumStake',
+            'type': 'uint256'
+          },
+          {
+            'internalType': 'uint256',
+            'name': 'dataGasCostPerByte',
+            'type': 'uint256'
+          },
+          {
+            'internalType': 'uint256',
+            'name': 'externalCallDataCostOverhead',
+            'type': 'uint256'
+          }
+        ],
+        'internalType': 'struct IRelayHub.RelayHubConfig',
+        'name': '',
+        'type': 'tuple'
+      }
+    ],
+    'stateMutability': 'view',
+    'type': 'function'
+  },
+]
 //single-event ABI, just for handling alpha "TransactionRelayed" event.
 const RelayHubAlphaAbi = [
         {
@@ -83,6 +147,7 @@ const RelayHubAlphaAbi = [
 // global.web3 = new Web3(p)
 // let addr='0x'+'0'.repeat(40)
 
+let showDetailStatus=window.location.href.match(/#.*debug/)
 // global.web3.eth.getBalance(addr).then(b=>console.log( 'bal=', b/1e18))
 // import './App.css';
 let removedRelays = {}
@@ -142,7 +207,7 @@ function formatDays(days) {
 }
 let HubStatus = ( {ver, net, token, countsPerDay, counts, minstake, unstakedelay, unstakedelayDays } ) => <span>
       <b>{ver}</b> MinStake ({token})={minstake} Unstake blocks={unstakedelay} ({formatDays(unstakedelayDays)})
-      { counts.month !==0 && <table border="1"><tbody><tr>
+      { showDetailStatus && counts.month !==0 && <table border="1"><tbody><tr>
         <td>Counts in the past</td>
         <td> hour:{counts.hour}</td>
         <td> day:{counts.day} </td>
@@ -155,13 +220,53 @@ let HubStatus = ( {ver, net, token, countsPerDay, counts, minstake, unstakedelay
 
 
 function RelayStats({mgr, eventsInfo}) {
-  if ( !eventsInfo ) return <span/>
+  if ( !eventsInfo || !showDetailStatus ) return <span/>
   const {hour,day,week, month } = mgrStats(eventsInfo, mgr)
   const data = sparklineData(eventsInfo, mgr)
   return <div>
       {hour}/{day}/{week}/{month}
       { month!==0 && <SparkLine data={data}></SparkLine> }
       </div>
+}
+
+async function getBlockNumber(web3) {
+
+  while (true) {
+    try {
+      console.log('== before getBlockNumber')
+      return await web3.eth.getBlockNumber()
+    }catch (e) {
+      console.log('=== failed to get block, e=', e.message)
+      await sleep(5000)
+    } finally {
+      console.log('== AFTER getBlockNumber')
+
+    }
+  }
+}
+
+// eslint-disable-next-line
+async function getPastEvents(contract, eventName, options) {
+    try {
+        return await contract.getPastEvents(eventName, options)
+    } catch(e) {
+        const matchrange = e.message.match(/block range.*\b(\d+)/)
+        if ( !matchrange )
+            throw e
+        const range = parseInt(matchrange[1])
+        const web3 = contract.web3
+        const last = options.toBlock || await getBlockNumber(web3)
+        let list=[]
+        const from = options.fromBlock
+        for ( let i=last-range; (i-range) > from; i-= range ) {
+            const newOptions = {...options, fromBlock: i, toBlock: i+range }
+            console.log( '===', newOptions)
+            list.push( contract.getPastEvents(eventName, newOptions ) )
+        }
+        console.log( '=== runnning parallel: ', list.length)
+        const all = await Promise.all(list)
+        return all.flat()
+    }
 }
 
     async function collectEventsInfo(web3,hub) {
@@ -178,7 +283,7 @@ function RelayStats({mgr, eventsInfo}) {
 
           events = await hubAlpha.getPastEvents('TransactionRelayed', {fromBlock: number- blocksPerHour*24*40, toBlock: number})
         }
-        
+
         return {events, number, blocksPerHour}
     }
 
@@ -205,8 +310,9 @@ function RelayStats({mgr, eventsInfo}) {
         if ( !collectEventsInfoRes) return []
         const filter = mgr ? mgrFilter(mgr) : (()=>true)
         const {events, number, blocksPerHour} = collectEventsInfoRes
-        const historyDays = 30
-        let blocksPerDay = 24 * blocksPerHour;
+	//bins are not "day" but "day/4" (should be renamed "bin")
+        const historyDays = 30 * 2
+        let blocksPerDay = 24 * blocksPerHour / 2;
         const lastMonthBlock = number - historyDays * blocksPerDay
 
         const counts =
@@ -241,20 +347,36 @@ class GsnStatus extends React.Component {
 
     let web3=this.web3
 
-    let curBlockNumber = await web3.eth.getBlockNumber()
-    let fromBlock=Math.max(1, curBlockNumber-BLOCK_HISTORY_COUNT )
+    let curBlockNumber = await getBlockNumber(web3)
+
+      let net = this.props.networks[this.props.network];
+      let blockhistorycount = net.lookupWindow || BLOCK_HISTORY_COUNT;
+      console.log('== hist', blockhistorycount, net)
+      let fromBlock=Math.max(1, curBlockNumber- blockhistorycount )
     let hub = new web3.eth.Contract(RelayHubAbi, this.state.network.RelayHub)
 
-    hub.methods.minimumStake().call().then(s=>{this.state.hubstate.minstake =s.toString()/1e18})
-    hub.methods.minimumUnstakeDelay().call().then(async (s)=>{
-      this.state.hubstate.unstakedelay = s.toString()
-      const curblock = await web3.eth.getBlock('latest')
-      const pastblock = await web3.eth.getBlock(curblock.number-s.toString())
-      this.state.hubstate.unstakedelayDays = (curblock.timestamp-pastblock.timestamp)/3600/24
+    //TODO: temporary solution, until we have a package that exposes getConfiguration
+    // (we still need backward-compatible API to show older versions)
+    let hubGetConfiguration = new web3.eth.Contract(getConfigurationAbi, this.state.network.RelayHub)
 
+    hubGetConfiguration.methods.getConfiguration().call().then(async (conf)=>{
+        this.state.hubstate.minstate = conf.minimumStake.toString()
+        this.state.hubstate.unstakedelay = conf.minimumUnstakeDelay.toString()
+        const curblock = await web3.eth.getBlock('latest')
+        const pastblock = await web3.eth.getBlock(curblock.number-conf.minimumUnstakeDelay.toString())
+        this.state.hubstate.unstakedelayDays = (curblock.timestamp-pastblock.timestamp)/3600/24
+    }).catch(e=>{
+      //older relayers, before conf
+      hub.methods.minimumStake().call().then(s=>{this.state.hubstate.minstake =s.toString()/1e18})
+      hub.methods.minimumUnstakeDelay().call().then(async (s)=>{
+        this.state.hubstate.unstakedelay = s.toString()
+        const curblock = await web3.eth.getBlock('latest')
+        const pastblock = await web3.eth.getBlock(curblock.number-s.toString())
+        this.state.hubstate.unstakedelayDays = (curblock.timestamp-pastblock.timestamp)/3600/24
+
+      })
     })
     hub.methods.versionHub().call().then(ver=>{this.state.hubstate.version = ver.replace(/\+opengsn.*/,'')}).catch(err=>this.state.hubstate.version='(no version)')
-
 
     collectEventsInfo(web3,hub).then(res=>{
       this.eventsInfo=res
@@ -269,7 +391,7 @@ class GsnStatus extends React.Component {
 
     hub.methods.stakeManager().call().then(async sma=>{
       let sm = new web3.eth.Contract(StakeManagerAbi, sma)
-      let smEvents = await sm.getPastEvents(null,{fromBlock:1})
+      let smEvents = await sm.getPastEvents(null,{fromBlock:0xba9389})
       smEvents.forEach(e=>{
         if ( e.event === 'HubUnauthorized' || e.event === 'StakeUnlocked') {
           let relayManager = e.returnValues.relayManager
@@ -360,10 +482,10 @@ class GsnStatus extends React.Component {
             setStatus(status, worker )
 //            this.updateDisplay()
           })
-          .catch( err=> { 
+          .catch( err=> {
             if ( /timeout/.test(err.toString())) {
               setStatus( {level:"orange",value: 'Timeout'})
-            } else { 
+            } else {
               setStatus( {level:"red",value: err.error && err.error.code ? err.error.code : err.message || err.toString() } )
             }
           })
@@ -416,11 +538,11 @@ class GsnStatus extends React.Component {
 
     this.state={
       relays: [],
-      hubstate: { 
+      hubstate: {
         counts:{}
       }
     }
-    let network = networks[this.props.network]
+    let network = props.networks[this.props.network]
     this.state.network = network
     let httpProvider = new Web3.providers.HttpProvider(network.url)
     // let web3provider = new RelayProvider( httpProvider, {verbose:true} )
@@ -456,9 +578,10 @@ class GsnStatus extends React.Component {
   return ( <>
     <Card> <Card.Body>
 
+      {/*eslint-disable-next-line*/}
      <a name={this.props.network}></a>
      <h3>Network: {netName(this.state.network)}</h3>
-      RelayHub: <Address addr={this.state.network.RelayHub} network={this.state.network} /> 
+      RelayHub: <Address addr={this.state.network.RelayHub} network={this.state.network} />
       <HubStatus net={this.state.network.name} token={this.state.network.token} countsPerDay={sparklineData(this.eventsInfo)} ver={this.state.hubstate.version} counts={this.state.hubstate.counts} minstake={this.state.hubstate.minstake} unstakedelay={this.state.hubstate.unstakedelay} unstakedelayDays={this.state.hubstate.unstakedelayDays} />
       <br/>
       Relays:
@@ -513,6 +636,17 @@ class App extends React.Component {
     this.state=cookie.load('app') || { showAll:true }
   }
 
+  componentDidMount () {
+    axios.get('networks.js').then(ret => {
+      try {
+        const networks = eval(ret.data)
+        this.setState({ networks })
+      } catch (e) {
+        this.setState({error: e.message})
+      }
+    })
+  }
+
   toggle(item) {
     let change = {}
     change[item] = !this.state[item]
@@ -531,11 +665,17 @@ class App extends React.Component {
       onlyNet = m[1].split(/,/)
     }
 
+    if ( !this.state.networks ) {
+      return <>
+        Loading...
+        {this.state.error && <div>{this.state.error}</div>}
+      </>
+    }
     return <>
      <Card.Body>
-    <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> GSN Relay Servers</h2>
+    <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> GSN (v2.2.2) Relay Servers</h2>
 
-         <NetworkLinks networks={networks} relayCounts={relayCounts} />
+         <NetworkLinks networks={this.state.networks} relayCounts={relayCounts} />
         <button onClick={()=>globalevent.emit('refresh')}>Refresh</button>
 
       {false &&<>
@@ -545,10 +685,11 @@ class App extends React.Component {
            <Form.Check type="checkbox" label="show owners" checked={this.state.showOwners} onChange={()=>this.toggle('showOwners')}/>
         </ButtonGroup>
       </>}
-      { Object.keys(networks)
+      {
+        Object.keys(this.state.networks)
             .filter( net=>this.state.showAll ? true : net==="mainnet" )
             .filter( net=> onlyNet === undefined || onlyNet.includes(net) )
-            .map( net=> <GsnStatus key={net} network={net} showOwners={this.state.showOwners} /> ) }
+            .map( net=> <GsnStatus key={net} networks={this.state.networks} network={net} showOwners={this.state.showOwners} /> ) }
       <button onClick={()=>globalevent.emit('refresh')}>Refresh</button>
 
     </Card.Body></>

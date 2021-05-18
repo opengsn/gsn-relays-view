@@ -1,5 +1,4 @@
 import React from 'react'
-import {networks} from "../networks";
 
 function RelayCounts({counts,net}) {
     if (!counts || !counts[net]) return <></>
@@ -31,6 +30,7 @@ export class NetworkLinks extends React.Component {
     }
 
     render() {
+        const networks = this.props.networks
         let networkArray = Object.values(networks);
         const netGroups = networkArray.map(n => n.group).reduce((set, g) => ({
             ...set,

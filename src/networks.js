@@ -28,6 +28,14 @@ const networks = {
         etherscan: "https://ropsten.etherscan.io/search?q=",
         RelayHub: "0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA",
     },
+    kovan: {
+        group: "Ethereum",
+        name: "Kovan",
+        token: 'kovEth',
+        url: "https://kovan.infura.io/v3/" + infura,
+        etherscan: "https://kovan.etherscan.io/search?q=",
+        RelayHub: "0x727862794bdaa3b8Bc4E3705950D4e9397E3bAfd",
+    },
 
     kotti: {
         group: "Ethereum Classic",

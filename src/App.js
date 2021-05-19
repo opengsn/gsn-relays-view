@@ -151,10 +151,10 @@ class GsnStatus extends React.Component {
             setStatus(status, worker )
 //            this.updateDisplay()
           })
-          .catch( err=> { 
+          .catch( err=> {
             if ( /timeout/.test(err.toString())) {
               setStatus( {level:"orange",value: 'Timeout'})
-            } else { 
+            } else {
               setStatus( {level:"red",value: err.error && err.error.code ? err.error.code : err.message || err.toString() } )
             }
           })
@@ -241,7 +241,7 @@ class GsnStatus extends React.Component {
 
      <a name={this.props.network}></a>
      <h3>Network: {netName(this.state.network)}</h3>
-      RelayHub: <Address addr={this.state.network.RelayHub} network={this.state.network} /> 
+      RelayHub: <Address addr={this.state.network.RelayHub} network={this.state.network} />
       <b>{this.state.hubversion}</b>
       <br/>
       Relays:
@@ -311,8 +311,18 @@ class App extends React.Component {
 
     return <>
      <Card.Body>
-    <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> GSN Relay Servers</h2>
+        <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> GSN Relay Servers</h2>
 
+         <Card style={{ width:"60%"}}>
+            <Card.Header style={{backgroundColor:"orange"}}>Warning:</Card.Header>
+
+            <Card.Body style={{backgroundColor:"yellow"}}>
+                This page is for the (now obsolete) contracts release <b>2.0.0</b> and relayers <b>2.1.0</b>
+                <br/>
+                Please use the <a href="https://relays.opengsn.org">latest release</a> instead.
+            </Card.Body>
+         </Card>
+         <hr/>
          <NetworkLinks networks={networks} />
         <button onClick={()=>globalevent.emit('refresh')}>Refresh</button>
 

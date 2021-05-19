@@ -47,8 +47,19 @@ const networks = {
         etherscan: "https://blockscout.com/etc/mainnet/address/"
     },
 
+    maticMainnet: {
+        group: "Polygon / Matic",
+        name: "Mainnet",
+        token: 'Matic',
+        url: "https://matic-mainnet.chainstacklabs.com",
+        fromBlock: "0xba9389",
+        etherscan: "https://explorer-mainnet.maticvigil.com/address/",
+        RelayHub: "0x6C28AfC105e65782D9Ea6F2cA68df84C9e7d750d",
+        lookupWindow: 1000
+    },
+
     maticMumbai: {
-        group: "Matic",
+        group: "Polygon / Matic",
         name: "Matic Mumbai",
         token: 'Matic',
         url: "https://matic-testnet-archive-rpc.bwarelabs.com",
@@ -84,6 +95,7 @@ const networks = {
         url: "https://bsc-dataseed.binance.org/",
         etherscan: "https://bscscan.com/address/",
         RelayHub: "0x3A7083E709BCCd0Fc5fb53cC0Ce9DBd3b5a82DcB",
+        lookupWindow: 4000
     },
 
     /*

@@ -102,7 +102,7 @@ const networks = {
         token: 'BNB',
         url: "https://bsc-dataseed.binance.org/",
         etherscan: "https://bscscan.com/address/",
-        RelayHub: "0x3A7083E709BCCd0Fc5fb53cC0Ce9DBd3b5a82DcB",
+        RelayHub: "0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA",
         lookupWindow: 4000
     },
 
@@ -179,15 +179,6 @@ const networks = {
             // url: "https://www.ethercluster.com/kotti",
             url: "https://kotti.connect.bloq.cloud/v1/roast-blossom-sentence",
             etherscan: "https://blockscout.com/etc/kotti/address/"
-        },
-
-        bsc: {
-            group: "Binance",
-            name: "Smart Chain",
-            token: 'BNB',
-            url: "https://bsc-dataseed.binance.org/",
-            etherscan: "https://bscscan.com/address/",
-            RelayHub: "0x3A7083E709BCCd0Fc5fb53cC0Ce9DBd3b5a82DcB",
         },
 
         xdai: {

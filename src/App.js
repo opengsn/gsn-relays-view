@@ -391,11 +391,14 @@ class GsnStatus extends React.Component {
 
     hub.methods.stakeManager().call().then(async sma=>{
       let sm = new web3.eth.Contract(StakeManagerAbi, sma)
-      let smEvents = await sm.getPastEvents(null,{fromBlock:0xba9389})
+      let smEvents = await sm.getPastEvents(null,{fromBlock:0x1})
       smEvents.forEach(e=>{
         if ( e.event === 'HubUnauthorized' || e.event === 'StakeUnlocked') {
+          //we don't know if we processs this unstaked/unlocked event or "RelayRegistered" event first.
+          // so we mark it in removedRelays, AND remove it from relays, just in case..
           let relayManager = e.returnValues.relayManager
           removedRelays[relayManager] = 1
+          console.log('== removing relay', net.name, e.event, relayManager, (relays[relayManager]||{}).url)
           delete relays[relayManager]
           this.updateDisplay()
         }

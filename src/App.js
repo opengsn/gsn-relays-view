@@ -250,12 +250,19 @@ async function getPastEvents(contract, eventName, options) {
     try {
         return await contract.getPastEvents(eventName, options)
     } catch(e) {
-        const matchrange = e.message.match(/block range.*\b(\d+)/)
-        if ( !matchrange )
-            throw e
-        const range = parseInt(matchrange[1])
+      console.log( 'parsing error', e.message)
+        let range
+        const last = options.toBlock || await getBlockNumber(web3) - 10
+        if (e.message.match(/more than/)) {
+          range = Math.trunc(last-options.fromBlock)/10
+
+        } else {
+          const matchrange = e.message.match(/block range.*\b(\d+)/)
+          if ( !matchrange )
+              throw e
+          range = parseInt(matchrange[1])
+        }
         const web3 = contract.web3
-        const last = options.toBlock || await getBlockNumber(web3)
         let list=[]
         const from = options.fromBlock
         for ( let i=last-range; (i-range) > from; i-= range ) {
@@ -276,7 +283,7 @@ async function getPastEvents(contract, eventName, options) {
         const ts = await web3.eth.getBlock(number-N).then(b=>b.timestamp)
         const secPerBlock = (timestamp-ts) / N
         const blocksPerHour = Math.trunc(3600 / secPerBlock)
-        let events = await hub.getPastEvents('TransactionRelayed', {fromBlock: number- blocksPerHour*24*40, toBlock: number})
+        let events = await getPastEvents(hub, 'TransactionRelayed', {fromBlock: number- blocksPerHour*24*40, toBlock: number})
         //hack to support old (alpha) relayhub events
         if ( events.length===0 ) {
           const hubAlpha = new web3.eth.Contract(RelayHubAlphaAbi, hub._address)
@@ -360,7 +367,7 @@ class GsnStatus extends React.Component {
     let hubGetConfiguration = new web3.eth.Contract(getConfigurationAbi, this.state.network.RelayHub)
 
     hubGetConfiguration.methods.getConfiguration().call().then(async (conf)=>{
-        this.state.hubstate.minstate = conf.minimumStake.toString()
+        this.state.hubstate.minstake = (conf.minimumStake.toString()/1e18).toFixed(4)
         this.state.hubstate.unstakedelay = conf.minimumUnstakeDelay.toString()
         const curblock = await web3.eth.getBlock('latest')
         const pastblock = await web3.eth.getBlock(curblock.number-conf.minimumUnstakeDelay.toString())

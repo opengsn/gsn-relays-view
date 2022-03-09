@@ -643,7 +643,8 @@ function MyTable({
 class App extends React.Component {
   constructor(props) {
     super(props)
-    this.state=cookie.load('app') || { showAll:true }
+    this.state = { showAll:true }
+    // cookie.load('app')
   }
 
   componentDidMount () {
@@ -664,7 +665,7 @@ class App extends React.Component {
   }
 
   componentDidUpdate() {
-    cookie.save('app', this.state)
+    // cookie.save('app', this.state)
   }
 
   render() {

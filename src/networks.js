@@ -1,5 +1,6 @@
 //use #infura=xxxx, or default one.
-const infura = (document.location.href.match(/#.*infura=([^&]*)/) || [])[1] || '127b8c9f6d0d46f69a42963b5cd0d0ac'
+const infura = (document.location.href.match(/#.*infura=([^&]*)/) || [])[1] || 'f40be2b1a3914db682491dc62a19ad43'
+// '127b8c9f6d0d46f69a42963b5cd0d0ac'
 
 //NOTE: this file is loaded dynamically (using eval) by the app. thus just updating it is enough instead of re-build entire react app
 const networks = {
@@ -26,7 +27,8 @@ const networks = {
         token: 'ropsEth',
         url: "https://ropsten.infura.io/v3/" + infura,
         etherscan: "https://ropsten.etherscan.io/search?q=",
-        RelayHub: "0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA",
+        RelayHub: "0xA703037bCaF8A31a466BD28A260ac646A083361a", //2.2.0, apr
+        RelayHub: '0xa703037bcaf8a31a466bd28a260ac646a083361a', //2.2.3, jul
     },
     kovan: {
         group: "Ethereum",
@@ -37,6 +39,7 @@ const networks = {
         RelayHub: "0x727862794bdaa3b8Bc4E3705950D4e9397E3bAfd",
     },
 
+/*
     kotti: {
         group: "Ethereum Classic",
         name: "Kotti",
@@ -55,11 +58,13 @@ const networks = {
         etherscan: "https://blockscout.com/etc/mainnet/address/"
     },
 
+*/
     maticMainnet: {
         group: "Polygon / Matic",
         name: "Mainnet",
         token: 'Matic',
-        url: "https://matic-mainnet.chainstacklabs.com",
+        //url: "https://matic-mainnet.chainstacklabs.com",
+        url: "https://polygon-mainnet.infura.io/v3/2461e2a5b1914b508c16cdb31d0225bf",
         fromBlock: "0xba9389",
         etherscan: "https://explorer-mainnet.maticvigil.com/address/",
         RelayHub: "0x6C28AfC105e65782D9Ea6F2cA68df84C9e7d750d",
@@ -75,6 +80,27 @@ const networks = {
         etherscan: "https://explorer-mumbai.maticvigil.com/address/",
         RelayHub: "0x6646cD15d33cE3a6933e36de38990121e8ba2806",
     },
+
+    optMain: {
+        group: "Optimism",
+        name: "Mainnet",
+        token: 'oETH',
+        url: "https://optimism-mainnet.infura.io/v3/" + infura,
+        fromBlock: "1245868",
+        etherscan: "https://optimistic.etherscan.io/address/",
+        RelayHub: "0x6f00F1A7BdB7E2E407385263B239090bCdb6b442",
+    },
+
+    optKovan: {
+        group: "Optimism",
+        name: "Kovan Testnet",
+        token: 'oETH',
+        url: "https://kovan.optimism.io/",
+        fromBlock: "1318966",
+        etherscan: "https://kovan-optimistic.etherscan.io/address/",
+        RelayHub: "0xceEd6F194C07EB606ae0F3899DdfA7dE8a4ABcB5",
+    },
+
 
     xdai: {
         group: "xDAI",
@@ -93,7 +119,8 @@ const networks = {
         token: 'tBNB',
         url: "https://data-seed-prebsc-1-s1.binance.org:8545",
         etherscan: "https://testnet.bscscan.com/address/",
-        RelayHub: "0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA"
+        RelayHub: "0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA",
+        lookupWindow: 4990
     },
 
 
@@ -102,9 +129,10 @@ const networks = {
         name: "Smart Chain",
         token: 'BNB',
         url: "https://bsc-dataseed.binance.org/",
+        url: "https://bsc-dataseed1.ninicoin.io/",
         etherscan: "https://bscscan.com/address/",
         RelayHub: "0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA",
-        lookupWindow: 4000
+        lookupWindow: 4990
     },
 */
 }

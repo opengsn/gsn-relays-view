@@ -101,6 +101,16 @@ const networks = {
         RelayHub: "0xceEd6F194C07EB606ae0F3899DdfA7dE8a4ABcB5",
     },
 
+    avax: {
+        group: "Avalanche",
+        name: "Mainnet",
+        token: '',
+        url: "https://api.avax.network/ext/bc/C/rpc",
+        url: "https://rpc.ankr.com/avalanche",
+        fromBlock: "12161392",
+        etherscan: "https://snowtrace.io/address/",
+        RelayHub: "0xafAFDac90164e4b2D4e39a1ac3e9dBC635dbbEA5",
+    },
 
     xdai: {
         group: "xDAI",

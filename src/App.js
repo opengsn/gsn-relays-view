@@ -253,6 +253,11 @@ async function getPastEvents(contract, eventName, options) {
       console.log( 'parsing error', e.message)
         let range
         const last = options.toBlock || await getBlockNumber(web3) - 10
+    if ( e.message.match('block range is too wide')) {
+      //hack: avalanche ANKR provider allows any block range if no "toBlock"
+      console.log( 'HACK for avax')
+            return await contract.getPastEvents(eventName, { ... options, toBlock: undefined} )
+    } else 
         if (e.message.match(/more than/)) {
           range = Math.trunc(last-options.fromBlock)/10
 

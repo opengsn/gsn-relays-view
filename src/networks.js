@@ -111,6 +111,17 @@ const networks = {
         etherscan: "https://snowtrace.io/address/",
         RelayHub: "0xafAFDac90164e4b2D4e39a1ac3e9dBC635dbbEA5",
     },
+    fuji: {
+        group: "Avalanche",
+        name: "Testnet (Fuji)",
+        token: '',
+        url: "https://api.avax-test.network/ext/bc/C/rpc",
+        fromBlock: 7857071,
+        etherscan: "https://testnet.snowtrace.io/address/",
+        RelayHub: "0x0321ABDba4dCf3f3AeCf463Def8F866568BC5174",
+        lookupWindow: 10000,
+        etherscanApi: 'https://api-testnet.snowtrace.io/api?'
+    },
 
     xdai: {
         group: "xDAI",

@@ -247,6 +247,7 @@ async function getBlockNumber(web3) {
 
 // eslint-disable-next-line
 async function getPastEvents(contract, eventName, options) {
+  console.log( '== getPastEvents', eventName, options, options.toBlock - options.fromBlock)
     try {
         return await contract.getPastEvents(eventName, options)
     } catch(e) {
@@ -256,9 +257,9 @@ async function getPastEvents(contract, eventName, options) {
     if ( e.message.match('block range is too wide')) {
       //hack: avalanche ANKR provider allows any block range if no "toBlock"
       console.log( 'HACK for avax')
-            return await contract.getPastEvents(eventName, { ... options, toBlock: undefined} )
+      return await contract.getPastEvents(eventName, { ... options, toBlock: undefined} )
     } else 
-        if (e.message.match(/more than/)) {
+        if (e.message.match(/(more than)|(too many blocks)/)) {
           range = Math.trunc(last-options.fromBlock)/10
 
         } else {
@@ -281,20 +282,26 @@ async function getPastEvents(contract, eventName, options) {
     }
 }
 
-    async function collectEventsInfo(web3,hub) {
+    async function collectEventsInfo(web3,hub, net) {
         //calc time per block:
         const {number, timestamp}= await web3.eth.getBlock('latest')
         const N=100000
         const ts = await web3.eth.getBlock(number-N).then(b=>b.timestamp)
         const secPerBlock = (timestamp-ts) / N
         const blocksPerHour = Math.trunc(3600 / secPerBlock)
-        let events = await getPastEvents(hub, 'TransactionRelayed', {fromBlock: number- blocksPerHour*24*40, toBlock: number})
-        //hack to support old (alpha) relayhub events
-        if ( events.length===0 ) {
-          const hubAlpha = new web3.eth.Contract(RelayHubAlphaAbi, hub._address)
-
-          events = await hubAlpha.getPastEvents('TransactionRelayed', {fromBlock: number- blocksPerHour*24*40, toBlock: number})
+        const fromBlock = number- blocksPerHour*24*40
+        if ( number - fromBlock > net.lookupWindow*10) {
+          console.log( 'unable to collect events for range', number-fromBlock)
+          return { events:[], number, blocksPerHour}
         }
+
+        let events = await getPastEvents(hub, 'TransactionRelayed', {fromBlock, toBlock: number})
+        //hack to support old (alpha) relayhub events
+        // if ( events.length===0 ) {
+        //   const hubAlpha = new web3.eth.Contract(RelayHubAlphaAbi, hub._address)
+
+        //   events = await hubAlpha.getPastEvents('TransactionRelayed', {fromBlock: number- blocksPerHour*24*40, toBlock: number})
+        // }
 
         return {events, number, blocksPerHour}
     }
@@ -390,7 +397,7 @@ class GsnStatus extends React.Component {
     })
     hub.methods.versionHub().call().then(ver=>{this.state.hubstate.version = ver.replace(/\+opengsn.*/,'')}).catch(err=>this.state.hubstate.version='(no version)')
 
-    collectEventsInfo(web3,hub).then(res=>{
+    collectEventsInfo(web3,hub, net).then(res=>{
       this.eventsInfo=res
       this.state.hubstate.counts = hubStats(this.eventsInfo)
     }).finally(()=>{
@@ -403,7 +410,10 @@ class GsnStatus extends React.Component {
 
     hub.methods.stakeManager().call().then(async sma=>{
       let sm = new web3.eth.Contract(StakeManagerAbi, sma)
-      let smEvents = await sm.getPastEvents(null,{fromBlock:0x1})
+      let smEvents = await sm.getPastEvents(null,{fromBlock:0x1}).catch(e=>{
+        console.log('smevents error=', e.message)
+        return []
+      })
       smEvents.forEach(e=>{
         if ( e.event === 'HubUnauthorized' || e.event === 'StakeUnlocked') {
           //we don't know if we processs this unstaked/unlocked event or "RelayRegistered" event first.
@@ -416,7 +426,7 @@ class GsnStatus extends React.Component {
         }
       })
     })
-    let pastEventsAsync = hub.getPastEvents('RelayServerRegistered', {fromBlock});
+    let pastEventsAsync = getPastEvents(hub, 'RelayServerRegistered', {fromBlock, toBlock: curBlockNumber});
 
     // let start = Date.now()
     let res = await pastEventsAsync

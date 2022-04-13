@@ -101,6 +101,27 @@ const networks = {
         RelayHub: "0xceEd6F194C07EB606ae0F3899DdfA7dE8a4ABcB5",
     },
 
+    bsc: {
+        group: "Binance",
+        name: "Smart Chain",
+        token: 'BNB',
+        url: "https://bsc-dataseed.binance.org/",
+        url: "https://bsc-dataseed1.ninicoin.io/",
+        etherscan: "https://bscscan.com/address/",
+        RelayHub: "0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA",
+        lookupWindow: 4990
+    },
+
+    testbsc: {
+        group: "Binance",
+        name: "Testnet",
+        token: 'tBNB',
+        url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+        etherscan: "https://testnet.bscscan.com/address/",
+        RelayHub: "0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA",
+        lookupWindow: 4990
+    },
+
     avax: {
         group: "Avalanche",
         name: "Mainnet",
@@ -133,29 +154,7 @@ const networks = {
     },
 
 
-/*
-    testbsc: {
-        group: "Binance",
-        name: "Testnet",
-        token: 'tBNB',
-        url: "https://data-seed-prebsc-1-s1.binance.org:8545",
-        etherscan: "https://testnet.bscscan.com/address/",
-        RelayHub: "0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA",
-        lookupWindow: 4990
-    },
 
-
-    bsc: {
-        group: "Binance",
-        name: "Smart Chain",
-        token: 'BNB',
-        url: "https://bsc-dataseed.binance.org/",
-        url: "https://bsc-dataseed1.ninicoin.io/",
-        etherscan: "https://bscscan.com/address/",
-        RelayHub: "0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA",
-        lookupWindow: 4990
-    },
-*/
 }
 
 // eslint-disable-next-line

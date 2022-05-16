@@ -12,6 +12,7 @@ const networks = {
         url: "https://mainnet.infura.io/v3/" + infura,
         etherscan: "https://etherscan.io/search?q=",
         RelayHub: "0x9e59Ea5333cD4f402dAc320a04fafA023fe3810D",
+        lookupWindow: 35*24*3600/15
     },
     rinkeby220: {
         group: "Ethereum",

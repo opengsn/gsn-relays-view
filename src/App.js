@@ -3,198 +3,15 @@ import React from 'react';
 import {Table, Card} from 'react-bootstrap';
 import {Form, ButtonGroup} from 'react-bootstrap';
 import Web3 from 'web3'
-import {abi as RelayHubAbi} from "@opengsn/gsn/dist/src/cli/compiled/RelayHub.json"
 import StakeManagerAbi from "@opengsn/gsn/dist/src/common/interfaces/IStakeManager.json"
-//import {RelayProvider} from "@opengsn/gsn/dist/src/relayclient/RelayProvider";
 import axios from 'axios'
-import cookie from 'react-cookies'
 import EventEmitter from 'events'
-// import { networks } from './networks'
 import {NetworkLinks} from "./components/NetworkLinks";
 
 import {SparkLine} from "./SparkLine";
-import {logWrap} from '@opengsn/gsn/dist/src/common/logWrapper'
 import {sleep} from '@opengsn/gsn/dist/src/common/Utils'
-// let p = new RelayProvider(global.web3.currentProvider)
 
-const RelayRegistrarAbi = [
-  {
-    "inputs": [
-      {"internalType": "address", "name": "relayHub", "type": "address"}, {
-        "internalType": "uint256",
-        "name": "oldestBlockNumber",
-        "type": "uint256"
-      }, {"internalType": "uint256", "name": "oldestBlockTimestamp", "type": "uint256"}, {
-        "internalType": "uint256",
-        "name": "maxCount",
-        "type": "uint256"
-      }],
-    "name": "readRelayInfos",
-    "outputs": [{
-      "components": [{
-        "internalType": "uint32",
-        "name": "lastSeenBlockNumber",
-        "type": "uint32"
-      }, {"internalType": "uint40", "name": "lastSeenTimestamp", "type": "uint40"}, {
-        "internalType": "uint32",
-        "name": "firstSeenBlockNumber",
-        "type": "uint32"
-      }, {"internalType": "uint40", "name": "firstSeenTimestamp", "type": "uint40"}, {
-        "internalType": "uint80",
-        "name": "baseRelayFee",
-        "type": "uint80"
-      }, {"internalType": "uint16", "name": "pctRelayFee", "type": "uint16"}, {
-        "internalType": "bytes32[3]",
-        "name": "urlParts",
-        "type": "bytes32[3]"
-      }, {"internalType": "address", "name": "relayManager", "type": "address"}],
-      "internalType": "struct IRelayRegistrar.RelayInfo[]",
-      "name": "info",
-      "type": "tuple[]"
-    }],
-    "stateMutability": "view",
-    "type": "function"
-  }]
-const getConfigurationAbi = [
-  {
-    'inputs': [],
-    'name': 'getConfiguration',
-    'outputs': [
-      {
-        'components': [
-          {
-            'internalType': 'uint256',
-            'name': 'maxWorkerCount',
-            'type': 'uint256'
-          },
-          {
-            'internalType': 'uint256',
-            'name': 'gasReserve',
-            'type': 'uint256'
-          },
-          {
-            'internalType': 'uint256',
-            'name': 'postOverhead',
-            'type': 'uint256'
-          },
-          {
-            'internalType': 'uint256',
-            'name': 'gasOverhead',
-            'type': 'uint256'
-          },
-          {
-            'internalType': 'uint256',
-            'name': 'maximumRecipientDeposit',
-            'type': 'uint256'
-          },
-          {
-            'internalType': 'uint256',
-            'name': 'minimumUnstakeDelay',
-            'type': 'uint256'
-          },
-          {
-            'internalType': 'uint256',
-            'name': 'minimumStake',
-            'type': 'uint256'
-          },
-          {
-            'internalType': 'uint256',
-            'name': 'dataGasCostPerByte',
-            'type': 'uint256'
-          },
-          {
-            'internalType': 'uint256',
-            'name': 'externalCallDataCostOverhead',
-            'type': 'uint256'
-          }
-        ],
-        'internalType': 'struct IRelayHub.RelayHubConfig',
-        'name': '',
-        'type': 'tuple'
-      }
-    ],
-    'stateMutability': 'view',
-    'type': 'function'
-  },
-  {
-    "inputs": [],
-    "name": "getRelayRegistrar",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-]
-
-//single-event ABI, just for handling alpha "TransactionRelayed" event.
-const RelayHubAlphaAbi = [
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "relayManager",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "relayWorker",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "paymaster",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes4",
-        "name": "selector",
-        "type": "bytes4"
-      },
-      {
-        "indexed": false,
-        "internalType": "enum IRelayHub.RelayCallStatus",
-        "name": "status",
-        "type": "uint8"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "returnValue",
-        "type": "bytes"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "charge",
-        "type": "uint256"
-      }
-    ],
-    "name": "TransactionRelayed",
-    "type": "event"
-  },
-]
+import getNetworks from './networks'
 
 // global.web3 = new Web3(p)
 // let addr='0x'+'0'.repeat(40)
@@ -263,7 +80,7 @@ function formatDays(days) {
 }
 
 let HubStatus = ({ver, net, token, countsPerDay, counts, minstake, unstakedelay, unstakedelayDays}) => <span>
-      <b>{ver}</b> MinStake ({token})={minstake} Unstake blocks={unstakedelay} ({formatDays(unstakedelayDays)})
+      <b>{ver}</b> Unstake delay {formatDays(unstakedelayDays)}
   {showDetailStatus && counts.month !== 0 && <table border="1">
     <tbody>
     <tr>
@@ -309,6 +126,7 @@ async function getBlockNumber(web3) {
 // eslint-disable-next-line
 async function getPastEvents(contract, eventName, options) {
   console.log('== getPastEvents', eventName, options, options.toBlock - options.fromBlock)
+  const web3 = contract.web3
   try {
     return await contract.getPastEvents(eventName, options)
   } catch (e) {
@@ -328,7 +146,6 @@ async function getPastEvents(contract, eventName, options) {
         throw e
       range = parseInt(matchrange[1])
     }
-    const web3 = contract.web3
     let list = []
     const from = options.fromBlock
     for (let i = last - range; (i - range) > from; i -= range) {
@@ -433,37 +250,21 @@ class GsnStatus extends React.Component {
 
     let net = this.props.networks[this.props.network];
     let blockhistorycount = net.lookupWindow || BLOCK_HISTORY_COUNT;
-    console.log('== hist', blockhistorycount, net)
+    // console.log('== hist', blockhistorycount, net)
     let fromBlock = Math.max(1, curBlockNumber - blockhistorycount)
-    let hub = new web3.eth.Contract(RelayHubAbi, this.state.network.RelayHub)
+    let hub = new web3.eth.Contract(this.state.network.RelayHubAbi, this.state.network.RelayHub)
 
     //TODO: temporary solution, until we have a package that exposes getConfiguration
     // (we still need backward-compatible API to show older versions)
-    let hubGetConfiguration = new web3.eth.Contract(getConfigurationAbi, this.state.network.RelayHub)
-    const registrarAddr = await hubGetConfiguration.methods.getRelayRegistrar().call().catch(e => null)
+    const registrarAddr = await hub.methods.getRelayRegistrar().call().catch(e => null)
     if (registrarAddr != null) {
       //new 3-alpha... new events needed..
-      this.registrar = new web3.eth.Contract(RelayRegistrarAbi, registrarAddr)
+      this.registrar = new web3.eth.Contract(this.state.network.contracts.RelayRegistrar.abi, registrarAddr)
     }
 
-    hubGetConfiguration.methods.getConfiguration().call().then(async (conf) => {
-      this.state.hubstate.minstake = (conf.minimumStake.toString() / 1e18).toFixed(4)
-      this.state.hubstate.unstakedelay = conf.minimumUnstakeDelay.toString()
-      const curblock = await web3.eth.getBlock('latest')
-      const pastblock = await web3.eth.getBlock(curblock.number - conf.minimumUnstakeDelay.toString())
-      this.state.hubstate.unstakedelayDays = (curblock.timestamp - pastblock.timestamp) / 3600 / 24
-    }).catch(e => {
-      //older relayers, before conf
-      hub.methods.minimumStake().call().then(s => {
-        this.state.hubstate.minstake = s.toString() / 1e18
-      })
-      hub.methods.minimumUnstakeDelay().call().then(async (s) => {
-        this.state.hubstate.unstakedelay = s.toString()
-        const curblock = await web3.eth.getBlock('latest')
-        const pastblock = await web3.eth.getBlock(curblock.number - s.toString())
-        this.state.hubstate.unstakedelayDays = (curblock.timestamp - pastblock.timestamp) / 3600 / 24
-
-      })
+    hub.methods.getConfiguration().call().then(async (conf) => {
+      //todo: minimum stake is per-token.
+      this.state.hubstate.unstakedelayDays = conf.minimumUnstakeDelay/3600/24
     })
     hub.methods.versionHub().call().then(ver => {
       this.state.hubstate.version = ver.replace(/\+opengsn.*/, '')
@@ -475,7 +276,7 @@ class GsnStatus extends React.Component {
       //2. one-click to all registered relayers..
       //3. generate "event-like" objects from infos (so the old code below, which parses events,
       // can work as-is..)
-      const relayInfos = await this.registrar.methods.readRelayInfos(hub._address, 0, 0, 100).call()
+      const relayInfos = await this.registrar.methods.readRelayInfos(hub._address).call()
       res = relayInfos.map(info => ({
         returnValues: {
           relayManager: info.relayManager,
@@ -684,7 +485,7 @@ class GsnStatus extends React.Component {
     let web3 = new Web3(web3provider)
     this.web3 = web3
 
-    this.relayHeaders = this.headers(['addr', 'worker', 'url', 'txfee', 'status', 'bal' /*, 'owner'*/])
+    this.relayHeaders = this.headers(['addr', 'worker', 'url', 'status', 'bal' /*, 'owner'*/])
     this.ownerHeaders = this.headers(['addr', 'name', 'deposit', 'bal'])
     globalevent.on('refresh', e => {
       this.updateRelays()
@@ -711,7 +512,7 @@ class GsnStatus extends React.Component {
 
   render() {
     //just to avoid "xDai xDai" (a group with a single network)
-    const netName = ({name, group}) => group === name ? group : group + " " + name
+    const netName = ({name, group}) => `${group} ${name}`.replace(RegExp(`\\b${group}\\s+${group}\\b`), group);
     return (<>
         <Card> <Card.Body>
 
@@ -782,16 +583,13 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    axios.get('networks.js').then(ret => {
-      try {
-        console.log('before eval')
-        const networks = eval(ret.data)
-        console.log('efter eval')
-        this.setState({networks})
-      } catch (e) {
-        console.log('crashed eval',e)
-        this.setState({error: e.message})
-      }
+    console.log('before getNetworks')
+    getNetworks().then(networks => {
+      console.log('efter getNetworks')
+      this.setState({networks})
+    }).catch(e => {
+      console.log('async eval exception', e)
+      this.setState({error: e.message})
     })
   }
 
@@ -821,8 +619,9 @@ class App extends React.Component {
     }
     return <>
       <Card.Body>
-        <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> GSN (v3 alpha) Relay Servers</h2>
-          <b>Note</b> This is the status page of the new v3 (alpha). For the current v2 network see <a href="https://relays.opengsn.org">here</a>
+        <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> GSN (v3 beta) Relay Servers</h2>
+        <b>Note</b> This is the status page of the new v3 (beta). For the current v2 network see <a
+        href="https://relays.opengsn.org">here</a>
         <hr/>
         <NetworkLinks networks={this.state.networks} relayCounts={relayCounts}/>
         <button onClick={() => globalevent.emit('refresh')}>Refresh</button>

@@ -11,7 +11,7 @@ import {NetworkLinks} from "./components/NetworkLinks";
 import {SparkLine} from "./SparkLine";
 import {sleep} from '@opengsn/gsn/dist/src/common/Utils'
 
-import getNetworks from './networks'
+import {getNetworks} from './networks'
 
 // global.web3 = new Web3(p)
 // let addr='0x'+'0'.repeat(40)
@@ -264,7 +264,7 @@ class GsnStatus extends React.Component {
 
     hub.methods.getConfiguration().call().then(async (conf) => {
       //todo: minimum stake is per-token.
-      this.state.hubstate.unstakedelayDays = conf.minimumUnstakeDelay/3600/24
+      this.state.hubstate.unstakedelayDays = conf.minimumUnstakeDelay / 3600 / 24
     })
     hub.methods.versionHub().call().then(ver => {
       this.state.hubstate.version = ver.replace(/\+opengsn.*/, '')

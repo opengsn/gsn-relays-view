@@ -36,7 +36,7 @@ let chainList = null
 //use gsn-networks for all gsn-deployed networks.
 // augment data from https://chainid.network/chains_mini.json, to add RPC
 // also add group defined above.
-async function getNetworks() {
+export async function getNetworks() {
   if (!chainList) {
     const chainResponse = await axios.get(chainListMiniUrl)
     if (!chainResponse.data) {
@@ -95,4 +95,3 @@ async function getNetworks() {
   return networks
 }
 
-module.exports = getNetworks

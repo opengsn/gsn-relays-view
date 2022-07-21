@@ -258,7 +258,7 @@ async function getPastEvents(contract, eventName, options) {
       //hack: avalanche ANKR provider allows any block range if no "toBlock"
       console.log( 'HACK for avax')
       return await contract.getPastEvents(eventName, { ... options, toBlock: undefined} )
-    } else 
+    } else
         if (e.message.match(/(more than)|(too many blocks)/)) {
           range = Math.trunc(last-options.fromBlock)/10
 
@@ -700,6 +700,9 @@ class App extends React.Component {
     return <>
      <Card.Body>
     <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> GSN (v2.2.2) Relay Servers</h2>
+       <b>Note</b> This is the status page of the latest stable GSN v2.2.5.
+       All development is now on the new v3 (beta). The new network status page is <a href="https://relays.opengsn.org">here</a>
+       <hr/>
 
          <NetworkLinks networks={this.state.networks} relayCounts={relayCounts} />
         <button onClick={()=>globalevent.emit('refresh')}>Refresh</button>

@@ -10,9 +10,10 @@ import {NetworkLinks} from "./components/NetworkLinks";
 
 import {SparkLine} from "./SparkLine";
 import {sleep} from '@opengsn/gsn/dist/src/common/Utils'
-
+import {Contract, providers, utils} from 'ethers'
 import {getNetworks} from './networks'
 
+const {formatUnits, formatEther} = utils
 // global.web3 = new Web3(p)
 // let addr='0x'+'0'.repeat(40)
 
@@ -79,21 +80,31 @@ function formatDays(days) {
   return Math.round(min) + ' mins'
 }
 
-let HubStatus = ({ver, net, token, countsPerDay, counts, minstake, unstakedelay, unstakedelayDays}) => <span>
-      <b>{ver}</b> Unstake delay {formatDays(unstakedelayDays)}
-  {showDetailStatus && counts.month !== 0 && <table border="1">
-    <tbody>
-    <tr>
-      <td>Counts in the past</td>
-      <td> hour:{counts.hour}</td>
-      <td> day:{counts.day} </td>
-      <td> week:{counts.week}</td>
-      <td> month:{counts.month}</td>
-      <td><SparkLine data={countsPerDay}/></td>
-    </tr>
-    </tbody>
-  </table>
-  }
+function TokenValueInfo({tokenInfo, index, count}) {
+  const suffix = index+1 < count ? ', ':''
+  if (!tokenInfo) return ''
+  const {value, decimals, symbol} = tokenInfo
+  return formatUnits(value, decimals) + ' ' + symbol+suffix
+}
+
+const HubStatus = ({ver, net, countsPerDay, counts, stakeTokenInfos, unstakedelayDays, baseRelayFee, pctRelayFee}) =>
+  <span>
+      <b>{ver}</b><br/>
+    Stake: lock time {formatDays(unstakedelayDays)}, tokens: { stakeTokenInfos.map((info,index)=><TokenValueInfo key={index} index={index} tokenInfo={info} index={index} count={stakeTokenInfos.length}/>) }
+    {baseRelayFee && <div>Relay Fee: {formatUnits(baseRelayFee || '', 'gwei')} gwei + {pctRelayFee}%</div>}
+    {showDetailStatus && counts.month !== 0 && <table border="1">
+      <tbody>
+      <tr>
+        <td>Counts in the past</td>
+        <td> hour:{counts.hour}</td>
+        <td> day:{counts.day} </td>
+        <td> week:{counts.week}</td>
+        <td> month:{counts.month}</td>
+        <td><SparkLine data={countsPerDay}/></td>
+      </tr>
+      </tbody>
+    </table>
+    }
   </span>
 
 
@@ -111,13 +122,13 @@ async function getBlockNumber(web3) {
 
   while (true) {
     try {
-      console.log('== before getBlockNumber')
+      // console.log('== before getBlockNumber')
       return await web3.eth.getBlockNumber()
     } catch (e) {
-      console.log('=== failed to get block, e=', e.message)
+      // console.log('=== failed to get block, e=', e.message)
       await sleep(5000)
     } finally {
-      console.log('== AFTER getBlockNumber')
+      // console.log('== AFTER getBlockNumber')
 
     }
   }
@@ -262,9 +273,49 @@ class GsnStatus extends React.Component {
       this.registrar = new web3.eth.Contract(this.state.network.contracts.RelayRegistrar.abi, registrarAddr)
     }
 
+    const creationBlockPromise = hub.methods.getCreationBlock().call()
     hub.methods.getConfiguration().call().then(async (conf) => {
       //todo: minimum stake is per-token.
       this.state.hubstate.unstakedelayDays = conf.minimumUnstakeDelay / 3600 / 24
+      this.state.hubstate.pctRelayFee = conf.pctRelayFee
+      this.state.hubstate.baseRelayFee = conf.baseRelayFee
+      let fromBlock = await creationBlockPromise
+      let toBlock = parseInt(fromBlock)+2000;
+      if ( toBlock > curBlockNumber ) {
+        toBlock = curBlockNumber
+      }
+
+      //TODO: the following code only read tokens in the first 2000 blocks after relayHub creation.
+      // this probably means it will miss newer staking tokens.
+      // Also, should remove duplicates (modification of token within this block range)
+      const events = await hub.getPastEvents('StakingTokenDataChanged', {fromBlock, toBlock})
+      const stakeTokenInfos = await Promise.all(
+        events.map(async (event) =>{
+          const {token, minimumStake} = event.returnValues
+          const provider = new providers.Web3Provider(web3.currentProvider)
+
+          const tokenContract = new Contract(token, [
+            'function symbol() view returns (string)',
+            'function decimals() view returns (uint)',
+          ], provider)
+
+          const [symbol, decimals] = await Promise.all([
+            tokenContract.symbol(),
+            tokenContract.decimals()
+          ])
+          let stakeTokenInfo = {
+            address: token,
+            symbol,
+            decimals,
+            value: minimumStake
+          };
+          console.log('tokeninfo=', stakeTokenInfo)
+          return stakeTokenInfo
+        })
+      )
+      this.setState({
+        stakeTokenInfos
+      })
     })
     hub.methods.versionHub().call().then(ver => {
       this.state.hubstate.version = ver.replace(/\+opengsn.*/, '')
@@ -280,8 +331,6 @@ class GsnStatus extends React.Component {
       res = relayInfos.map(info => ({
         returnValues: {
           relayManager: info.relayManager,
-          baseRelayFee: info.baseRelayFee,
-          pctRelayFee: info.pctRelayFee,
           relayUrl: Buffer.from(info.urlParts.join('').replace(/0x/g, '').replace(/(00)*$/, ''), 'hex').toString()
         }
       }))
@@ -520,10 +569,12 @@ class GsnStatus extends React.Component {
           <a name={this.props.network}></a>
           <h3>Network: {netName(this.state.network)}</h3>
           RelayHub: <Address addr={this.state.network.RelayHub} network={this.state.network}/>
-          <HubStatus net={this.state.network.name} token={this.state.network.token}
+          <HubStatus net={this.state.network.name}
                      countsPerDay={sparklineData(this.eventsInfo)} ver={this.state.hubstate.version}
-                     counts={this.state.hubstate.counts} minstake={this.state.hubstate.minstake}
-                     unstakedelay={this.state.hubstate.unstakedelay}
+                     counts={this.state.hubstate.counts}
+                     stakeTokenInfos={this.state.stakeTokenInfos||[]}
+                     pctRelayFee={this.state.hubstate.pctRelayFee}
+                     baseRelayFee={this.state.hubstate.baseRelayFee}
                      unstakedelayDays={this.state.hubstate.unstakedelayDays}/>
           <br/>
           Relays:
@@ -583,12 +634,10 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    console.log('before getNetworks')
     getNetworks().then(networks => {
-      console.log('efter getNetworks')
       this.setState({networks})
     }).catch(e => {
-      console.log('async eval exception', e)
+      console.log('failed getNetworks', e)
       this.setState({error: e.message})
     })
   }
@@ -621,7 +670,7 @@ class App extends React.Component {
       <Card.Body>
         <h2>&nbsp;<img src="favicon.ico" height="50px" alt=""/> GSN (v3 beta) Relay Servers</h2>
         <b>Note</b> This is the status page of the new v3 (beta). For the current v2 network see <a
-        href="https://relays.opengsn.org">here</a>
+        href="https://relays-v2.opengsn.org">here</a>
         <hr/>
         <NetworkLinks networks={this.state.networks} relayCounts={relayCounts}/>
         <button onClick={() => globalevent.emit('refresh')}>Refresh</button>
